@@ -1,19 +1,15 @@
-- name: Software Engineer Keywords
+- name: Programming Language
   keywords:
       - Java
-      - C++
       - Python
-      - Design Patterns
+      - C++
 
-- name: Mobile Developer Keywords
+- name: Deployment
   keywords:
-      - Android
-      - Reverse Engineering
+      - Docker
 
-- name: Windows Developer Keywords
+- name: Courses Taken
   keywords:
-      - Win32 SDK
-      - DuiLib
-      - WTL
-      - COM
-      - WinDbg
+      - Advanced Topics Database Systems
+      - Realtime and Big Data Analytics
+      - Distributed Systems

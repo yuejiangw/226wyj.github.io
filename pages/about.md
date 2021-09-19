@@ -2,19 +2,21 @@
 layout: page
 title: About
 description: 打码改变世界
-keywords: Zhuang Ma, 马壮
+keywords: Yuejiang Wu
 comments: true
-menu: 关于
+menu: About
 permalink: /about/
 ---
 
-我是马壮，码而生，码而立。
+Hi, there.
 
-仰慕「优雅编码的艺术」。
+My name is Yuejiang Wu, a MSCS student in NYU.
 
-坚信熟能生巧，努力改变人生。
+I admire the art of elegant coding, and I keep learning to achieve that.
 
-## 联系
+Although I'm a slow walker, but I never walk backwards.
+
+## Contact
 
 <ul>
 {% for website in site.data.social %}

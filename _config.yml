@@ -5,7 +5,7 @@ baseurl: ""
 url: https://226wyj.github.io
 date_format: "ordinal"
 title: Wu, Yuejiang's Blog
-subtitle: "Living, Learning"
+subtitle: "Living, Learning, Enjoying"
 description: "My personal blog, used for recording my leraning life."
 keywords: blog, learn
 timezone: America/New_York
@@ -48,7 +48,7 @@ highlight_theme: github
 # ---------------- #
 #      Author      #
 # ---------------- #
-author: Yuejiang Wu
+author: Wu, Yuejiang
 organization: 
 organization_url: 
 github_username: 226wyj

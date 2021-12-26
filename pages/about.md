@@ -1,8 +1,8 @@
 ---
 layout: page
 title: About
-description: 打码改变世界
-keywords: Yuejiang Wu
+description: Stay hungery, Stay foolish
+keywords: Wu, Yuejiang
 comments: true
 menu: About
 permalink: /about/
@@ -10,7 +10,7 @@ permalink: /about/
 
 Hi, there.
 
-My name is Yuejiang Wu, a MSCS student in NYU.
+My name is WU Yuejiang, a MSCS student in NYU.
 
 I admire the art of elegant coding, and I keep learning to achieve that.
 

@@ -3,10 +3,22 @@
       - Java
       - Python
       - C++
+      - HTML
+      - CSS
+      - JavaScript
+      - SQL
 
-- name: Deployment
+- name: Frameworks
   keywords:
+      - PyTorch
+      - Flask
+      - SpringBoot
+
+- name: Tools
+  keywords:
+      - MySQL
       - Docker
+      - Git
 
 - name: Courses Taken
   keywords:

@@ -2,9 +2,9 @@
 #   Main Configs   #
 # ---------------- #
 baseurl: ""
-url: https://226wyj.github.io/
+url: https://226wyj.github.io
 date_format: "ordinal"
-title: Wu, Yuejiang
+title: Wu, Yuejiang's Blog
 subtitle: "Living, Learning"
 description: "My personal blog, used for recording my leraning life."
 keywords: blog, learn

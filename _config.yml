@@ -6,8 +6,8 @@ url: https://226wyj.github.io/
 date_format: "ordinal"
 title: Wu, Yuejiang
 subtitle: "Living, Learning"
-description: "My personal blog, used for recording my leraning life in NYU."
-keywords: NYU, Wu, Yuejiang
+description: "My personal blog, used for recording my leraning life."
+keywords: blog, learn
 timezone: America/New_York
 encoding: "utf-8"
 repository: 226wyj/226wyj.github.io
@@ -29,15 +29,15 @@ components:
     # My Popular Repositories
     side_bar_repo:
         enabled: true
-        limit: 5
+        limit: 3
     # 文章字数统计
     word_count:
         enabled: true
     # 页面右上角，以及「关于」页面的二维码
     # 修改图片请替换 assets/images/qrcode.jpg
     qrcode:
-        enabled: true
-        image_alt: 闷骚的程序员
+        enabled: false
+        image_alt: ""
 # 压缩页面内容
 compress_html:
   clippings: all
@@ -137,10 +137,10 @@ gitment:
         client_secret:
 # https://github.com/gitalk/gitalk#install
 gitalk:
-    owner: mzlogin
-    repo: blog-comments
-    clientID: d2e1cbbd298958076462
-    clientSecret: b42a4178e5fd4a7cf63189ef4b1453b05c375709
+    owner: 226wyj
+    repo: blog-comment
+    clientID: 816a74632f6a9e1d895c
+    clientSecret: 69da216c45ee48df2f0e92506cf044cbc001ef2b
 # 在使用其它评论组件时可点击显示 Disqus
 lazy_load_disqus : false
 

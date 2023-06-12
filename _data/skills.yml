@@ -6,6 +6,7 @@
       - HTML
       - CSS
       - JavaScript
+      - TypeScript
       - SQL
 
 - name: Frameworks
@@ -13,10 +14,12 @@
       - PyTorch
       - Flask
       - SpringBoot
+      - React
 
 - name: Tools
   keywords:
       - MySQL
+      - MongoDB
       - Docker
       - Git
 

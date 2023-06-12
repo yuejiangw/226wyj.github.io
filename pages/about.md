@@ -1,7 +1,7 @@
 ---
 layout: page
 title: About
-description: Stay hungery, Stay foolish
+description: Stay hungry, Stay foolish
 keywords: Wu, Yuejiang
 comments: true
 menu: About
@@ -10,7 +10,7 @@ permalink: /about/
 
 Hi, there.
 
-My name is WU Yuejiang, a MSCS student in NYU.
+My name is WU Yuejiang, a software engineer at [Indeed, inc](https://www.indeed.com/).
 
 I admire the art of elegant coding, and I keep learning to achieve that.
 

@@ -4,11 +4,11 @@
 baseurl: ""
 url: https://226wyj.github.io
 date_format: "ordinal"
-title: Wu, Yuejiang's Blog
-subtitle: "Living, Learning, Enjoying"
-description: "My personal blog, used for recording my leraning life."
+title: Wu
+subtitle: "Keep going"
+description: "My personal blog, used for recording my learning life."
 keywords: blog, learn
-timezone: America/New_York
+timezone: America/Los_Angeles
 encoding: "utf-8"
 repository: 226wyj/226wyj.github.io
 # 对 css 和 js 资源的 cdn 加速配置
@@ -52,7 +52,7 @@ author: Wu, Yuejiang
 organization: 
 organization_url: 
 github_username: 226wyj
-location: Jersey City, U.S.
+location: Seattle, U.S.
 email: wuyuejiang123@gmail.com
 
 # ---------------- #

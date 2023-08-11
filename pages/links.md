@@ -8,6 +8,8 @@ menu: 链接
 permalink: /links/
 ---
 
+> Some useful resources for reference
+
 <ul>
 {% for link in site.data.links %}
   {% if link.src == 'life' %}

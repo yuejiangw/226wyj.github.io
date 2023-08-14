@@ -10,9 +10,11 @@ permalink: /about/
 
 Hi, there.
 
-My name is WU Yuejiang, a SWE at [Indeed, inc](https://www.indeed.com/).
+My name is Yuejiang Wu, currently a software engineer at [Indeed, inc](https://www.indeed.com/).
 
-I admire the art of elegant coding, and I'm trying my best to become a better software engineer.
+My major is computer science, I got my Bachelor's degree at [NEU](https://www.neu.edu.cn/) and Master's degree at [NYU](https://www.nyu.edu/).
+
+I admire the art of elegant coding, and I'm trying my best to become a better SWE.
 
 Although I'm a slow walker, but I never walk backwards.
 

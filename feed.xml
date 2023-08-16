@@ -1,4 +1,67 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.3">Jekyll</generator><link href="https://226wyj.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://226wyj.github.io/" rel="alternate" type="text/html" /><updated>2023-08-13T21:28:21-07:00</updated><id>https://226wyj.github.io/feed.xml</id><title type="html">Wu</title><subtitle>My personal blog, used for recording my learning life.</subtitle><author><name>Wu, Yuejiang</name></author><entry><title type="html">MongoDB Learning - 2</title><link href="https://226wyj.github.io/2023/06/11/MongoDB-learn-2/" rel="alternate" type="text/html" title="MongoDB Learning - 2" /><published>2023-06-11T00:00:00-07:00</published><updated>2023-06-11T00:00:00-07:00</updated><id>https://226wyj.github.io/2023/06/11/MongoDB-learn-2</id><content type="html" xml:base="https://226wyj.github.io/2023/06/11/MongoDB-learn-2/">&lt;h2 id=&quot;创建更新和删除文档&quot;&gt;创建、更新和删除文档&lt;/h2&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.3">Jekyll</generator><link href="https://226wyj.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://226wyj.github.io/" rel="alternate" type="text/html" /><updated>2023-08-15T22:19:50-07:00</updated><id>https://226wyj.github.io/feed.xml</id><title type="html">Wu</title><subtitle>My personal blog, used for recording my learning life.</subtitle><author><name>Wu, Yuejiang</name></author><entry><title type="html">使用字符串拼接 URL 时要注意特殊字符编码</title><link href="https://226wyj.github.io/2023/08/15/URI-bug/" rel="alternate" type="text/html" title="使用字符串拼接 URL 时要注意特殊字符编码" /><published>2023-08-15T00:00:00-07:00</published><updated>2023-08-15T00:00:00-07:00</updated><id>https://226wyj.github.io/2023/08/15/URI-bug</id><content type="html" xml:base="https://226wyj.github.io/2023/08/15/URI-bug/">&lt;h2 id=&quot;background&quot;&gt;Background&lt;/h2&gt;
+
+&lt;p&gt;最近在做数据库迁移，需要将组里目前的 Mongo Cluster 从旧平台迁移到 Atlas 上。使用另一个平台的 Mongo 要求我们把 Connection String 改成另一个平台提供的 URI，并以此来进行数据库连接和生成 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MongoClient&lt;/code&gt; 对象。&lt;/p&gt;
+
+&lt;p&gt;这里假设 Atlas 提供的通过 Java Driver 连接的 URL 为：&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;mongodb+srv://&amp;lt;username&amp;gt;:&amp;lt;password&amp;gt;@your-database-name.mongodb.net/
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;我们需要提供相应的 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;username&lt;/code&gt; 和 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;password&lt;/code&gt; 来进行连接。 由于我们的用户名和对应密码已经存储在 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Vault&lt;/code&gt; 中，因此在这里，我采用的方法为字符串直接拼接的方式来生成完整的 Connection String。&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;MongoClient&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;atlasMongoClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nd&quot;&gt;@Value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;${atlas.mongo.username}&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;nd&quot;&gt;@Value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;${atlas.mongo.password}&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;connectionString&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;
+            &lt;span class=&quot;s&quot;&gt;&quot;mongodb+srv://%s:%s@your-database-name.mongodb.net&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;nc&quot;&gt;MongoClientSettings&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;MongoClientSettings&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;builder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;applyConnectionString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;ConnectionString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connectionString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;build&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Create a new client and connect to the server&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;no&quot;&gt;LOG&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;info&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Using Atlas mongo client&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;MongoClients&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;MongoException&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;no&quot;&gt;LOG&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Error happened when creating Atlas mongo client&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;printStackTrace&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;然而在提交了修改之后我发现部署失败了，经过查看应用日志找到根本原因，显示的报错信息为：&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;java.lang.IllegalArgumentException: URLDecoder: Illegal hex characters in escape (%) pattern - For input string: &quot;Fl&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;analysis&quot;&gt;Analysis&lt;/h2&gt;
+
+&lt;p&gt;首先根据报错信息来看，问题出在我们的 URL 上：出现了非法字符 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%&lt;/code&gt;。通过查看密码内容得知，在我们的密码中确实含有一个 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%&lt;/code&gt;。由此则可以解释问题原因：&lt;/p&gt;
+
+&lt;p&gt;在 URL 中， 百分号（%）后面应该跟着两个十六进制字符，表示一个 ASCII 字符的编码。而由于我们的密码中包含了 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%&lt;/code&gt;（假如它的内容为 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ABC%FL&lt;/code&gt;），当我们不做任何处理直接将它拼接进 URL 中时，URL decoder 会将 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%FL&lt;/code&gt; 当成一个 ASCII 字符编码去处理，很显然就会报错了。&lt;/p&gt;
+
+&lt;h2 id=&quot;solution&quot;&gt;Solution&lt;/h2&gt;
+
+&lt;p&gt;在使用字符串拼接 URL 之前，我们可以使用 Java 提供的 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;URLEncoder&lt;/code&gt; 对字符串进行编码，以便将其作为 URI 参数传递，使用方法如下：&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;encodedPassword&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;URLEncoder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;encode&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;UTF-8&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;connectionString&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;mongodb+srv://%s:%s@your-database-name.mongodb.net&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;encodedPassword&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;UnsupportedEncodingException&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;printStackTrace&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;由此问题得以解决。&lt;/p&gt;
+
+&lt;h2 id=&quot;reference&quot;&gt;Reference&lt;/h2&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;https://blog.51cto.com/u_15061935/3598981&lt;/li&gt;
+&lt;/ol&gt;</content><author><name>Wu, Yuejiang</name></author><category term="work" /><category term="bug" /><summary type="html">Background</summary></entry><entry><title type="html">MongoDB Learning - 2</title><link href="https://226wyj.github.io/2023/06/11/MongoDB-learn-2/" rel="alternate" type="text/html" title="MongoDB Learning - 2" /><published>2023-06-11T00:00:00-07:00</published><updated>2023-06-11T00:00:00-07:00</updated><id>https://226wyj.github.io/2023/06/11/MongoDB-learn-2</id><content type="html" xml:base="https://226wyj.github.io/2023/06/11/MongoDB-learn-2/">&lt;h2 id=&quot;创建更新和删除文档&quot;&gt;创建、更新和删除文档&lt;/h2&gt;
 
 &lt;h3 id=&quot;创建文档&quot;&gt;创建文档&lt;/h3&gt;
 

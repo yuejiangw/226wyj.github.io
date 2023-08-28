@@ -1,4 +1,383 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.3">Jekyll</generator><link href="https://226wyj.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://226wyj.github.io/" rel="alternate" type="text/html" /><updated>2023-08-24T23:58:17-07:00</updated><id>https://226wyj.github.io/feed.xml</id><title type="html">Wu</title><subtitle>My personal blog, used for recording my learning life.</subtitle><author><name>Wu, Yuejiang</name></author><entry><title type="html">使用字符串拼接 URL 时要注意特殊字符编码</title><link href="https://226wyj.github.io/2023/08/15/URI-bug/" rel="alternate" type="text/html" title="使用字符串拼接 URL 时要注意特殊字符编码" /><published>2023-08-15T00:00:00-07:00</published><updated>2023-08-15T00:00:00-07:00</updated><id>https://226wyj.github.io/2023/08/15/URI-bug</id><content type="html" xml:base="https://226wyj.github.io/2023/08/15/URI-bug/">&lt;h2 id=&quot;background&quot;&gt;Background&lt;/h2&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.3">Jekyll</generator><link href="https://226wyj.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://226wyj.github.io/" rel="alternate" type="text/html" /><updated>2023-08-27T17:34:50-07:00</updated><id>https://226wyj.github.io/feed.xml</id><title type="html">Wu</title><subtitle>My personal blog, used for recording my learning life.</subtitle><author><name>Wu, Yuejiang</name></author><entry><title type="html">DDIA Learning - 3</title><link href="https://226wyj.github.io/2023/08/27/DDIA-learn-3/" rel="alternate" type="text/html" title="DDIA Learning - 3" /><published>2023-08-27T00:00:00-07:00</published><updated>2023-08-27T00:00:00-07:00</updated><id>https://226wyj.github.io/2023/08/27/DDIA-learn-3</id><content type="html" xml:base="https://226wyj.github.io/2023/08/27/DDIA-learn-3/">&lt;h2 id=&quot;索引&quot;&gt;索引&lt;/h2&gt;
+
+&lt;h3 id=&quot;简介&quot;&gt;简介&lt;/h3&gt;
+
+&lt;p&gt;为了高效地查找数据库中特定键的值，需要新的数据结构：索引。所有索引背后的基本想法都是保留一些额外的元数据（metadata），这些元数据作为路标，帮助定位想要的数据。&lt;/p&gt;
+
+&lt;p&gt;索引是基于原始数据派生而来的额外数据结构，很多数据库都允许单独添加和删除索引而不影响数据库内容，它只会影响查询性能。维护额外的结构会引入新的开销，特别是在写操作的时候。对于写入，它很难超过简单追加文件方式的性能，但由于每次写数据时都需要更新索引，因此任何类型的索引通常都会降低写的速度。&lt;/p&gt;
+
+&lt;p&gt;这里涉及到一个重要的权衡设计：适当的索引可以加速读取查询，但每个索引都会减慢写速度。&lt;/p&gt;
+
+&lt;h3 id=&quot;key-value-索引-1---哈希索引&quot;&gt;key-value 索引 1 - 哈希索引&lt;/h3&gt;
+
+&lt;p&gt;以 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Bitcask&lt;/code&gt; 存储引擎来举例，可以用哈希表把每个键一一映射到数据文件中额字节偏移量，之后保存这个哈希表就成为了数据库的索引（如下图所示）。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/ddia/chapter-3/hash-index.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;这种存储引擎非常适合每个键值频繁更新的场景，对于这种工作负载，有很多写操作，但没有太多不同的 key。&lt;/p&gt;
+
+&lt;h4 id=&quot;局限性&quot;&gt;局限性&lt;/h4&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;哈希表必须全部放入内存，如果有大量的 key，则有可能会有 OOM Error。&lt;/li&gt;
+  &lt;li&gt;区间查询效率不高，这是由哈希表的无序性决定的，例如，我们想查询 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;kitty000&lt;/code&gt; 和 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;kitty999&lt;/code&gt; 区间内的所有键，只能采用逐个查找的方式查询每一个键。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;key-value-索引-2---sstables&quot;&gt;key-value 索引 2 - SSTables&lt;/h3&gt;
+
+&lt;p&gt;SSTables，全称叫 Sorted String Tables，翻译成中文叫排序字符串表。它的本质也是一个 key-value 结构的表，只不过要求所有的键值对按照 key 来排序。它要求每个键在每个合并的段文件中只能出现一次（压缩过程已经确保了），与普通的哈希索引日志段相比，SSTables 具有以下优点：&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;合并更加高效，可以采取类似于 merge sort 的算法进行合并（如下图所示）。即使相同的键出现在多个输入段也没有关系，因为每个段都包含在某短时间内写入数据库的所有值，因此我们可以直接保留最新段的值，丢弃旧段中的值即可。
+&lt;img src=&quot;/images/blog/ddia/chapter-3/sstable-1.png&quot; alt=&quot;&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;在文档中查找特定的键时，不再需要在内存中保存所有键的索引。由于所有的键都是排好序的，我们可以通过范围查询来快速定位要查找的键。尽管我们仍需要使用一个内存索引来记录某些键的偏移（如下图所示），但该索引可以是稀疏的。
+&lt;img src=&quot;../images/blog/ddia/chapter-3/sstable-2.png&quot; alt=&quot;&quot; /&gt;&lt;/li&gt;
+  &lt;li&gt;由于读请求往往需要首先扫描我们上面提到的稀疏索引，因此对于该稀疏索引指向的记录们，可以考虑将它们保存到一个块中并在写磁盘前进行压缩，节省了磁盘空间 + 减少了 I/O 带宽的占用&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h4 id=&quot;sstable-的构建和维护&quot;&gt;SSTable 的构建和维护&lt;/h4&gt;
+
+&lt;p&gt;存储引擎的基本工作流程如下&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;当写入时，将其添加到内存中的平衡树结构中（如红黑树），这个树有时被称为内存表&lt;/li&gt;
+  &lt;li&gt;当内存表大于某个阈值时，将其作为 SSTable 文件写入磁盘&lt;/li&gt;
+  &lt;li&gt;为了处理读请求，首先尝试在内存表中查找键，然后按照从新到旧的顺序依次查找磁盘段文件，直到找到目标&lt;/li&gt;
+  &lt;li&gt;后台进程会周期性地执行段合并与压缩过程以合并多个段文件，并丢弃那些已被覆盖或删除的值&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;从-sstable-到-lsm-tree&quot;&gt;从 SSTable 到 LSM-Tree&lt;/h4&gt;
+
+&lt;p&gt;上面描述的索引结构最初由 Patrick O’Neil 等人以 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Log-Structured Merge-Tree&lt;/code&gt; 命名，取其首字母就是 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;LSM-Tree&lt;/code&gt;，它建立在更早期的日志结构文件系统之上，因此基于合并和压缩排序文件原理的存储引擎通常都被称为 LSM 存储引擎。&lt;/p&gt;
+
+&lt;h4 id=&quot;性能优化&quot;&gt;性能优化&lt;/h4&gt;
+
+&lt;p&gt;当查找数据库中某个不存在的键时，LSM-Tree 算法可能会很慢，因为它要从内存表扫描到最旧的段文件。为了优化这种访问，存储引擎通常使用额外的布隆过滤器。&lt;/p&gt;
+
+&lt;p&gt;不同的策略也会影响甚至决定 SSTables 压缩和合并的具体顺序和时机，最常见的方式是大小分级和分层压缩。大小分级压缩中，较新和较小的 SSTables 被连续合并到较旧和较大的 SSTables 中；分层压缩中，键的范围分裂成多个更小的 SSTables，旧数据被移动到单独的层级。&lt;/p&gt;
+
+&lt;p&gt;即使有许多细微差异，LSM-Tree 的基本思想都是一致且有效的，即保存在后台合并一些列的 SSTable。由于数据按顺序排列存储，因此可以有效地执行区间查询，并且由于磁盘是顺序写入的，所以 LSM-Tree 可以支持非常高的写入吞吐量。&lt;/p&gt;
+
+&lt;h3 id=&quot;key-value-索引-3---b-tree&quot;&gt;key-value 索引 3 - B-Tree&lt;/h3&gt;
+
+&lt;p&gt;B-Tree 保留按键值排序的 key-value 对，这样可以实现高效的 key-value 查找和区间查询。B-Tree 将数据库分解成固定大小的块或页，传统上大小为 4KB，页是内部读写的最小单元。每个页面都可以使用地址或位置进行标识，这样可以让一个页面引用另一个页面，类似指针，不过是指向磁盘地址而不是内存。某一页会被指定为 B-Tree 的根，每当查找索引中的一个键时，总是从这里开始。如下图所示，我们要寻找 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;key = 251&lt;/code&gt;，则从根节点开始不断向下确定范围，当最终来到叶子节点的时候从头遍历即可。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../images/blog/ddia/chapter-3/b-tree-lookup.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;B-Tree 中一个页所包含的子页引用数量称为分支因子，上图中的分支因子为 6，因为每个节点有 6 个子节点。在实际中，分支因素取决于存储页面引用范围边界所需的空间总量，通常为几百个。&lt;/p&gt;
+
+&lt;p&gt;B-Tree 的更新操作比较容易理解，我们先搜索包含该键的叶子节点（叶子页），在将其值修改之后重新写回磁盘即可。&lt;/p&gt;
+
+&lt;p&gt;添加新键的时候有额外的清况要考虑：首先需要找到其范围包含新键的页，并将新的键添加到该页。如果此时该页的分支数量已经超出了分支因子（即没有空间来容纳新键），则我们要将该页分裂成两个半满的页，并且父页也需要更新以包含分裂之后的新的键的范围。父页在分裂的时候是一个递归的过程，直到我们遇到一个满足分支因子的节点。例如下图中我们想要添加一个新的 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;key = 334&lt;/code&gt;，从根节点向下进行范围搜索，它落在 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[333, 345]&lt;/code&gt; 区间，就这样依次查询直到我们找到了叶子页，由于页中的 key 是有序的，因此新键要插入在 335 和 337 之间。由于插入新键后分支数量变为了 7，大于我们规定的分支因子，因此要进行分裂。分裂成两个半满的页后，&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;337&lt;/code&gt; 作为分裂点要被存在它的父节点中。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../images/blog/ddia/chapter-3/b-tree-insert.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;通过这种插入算法，我们可以确保 B-Tree 是平衡的，深度为 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;O(logn)&lt;/code&gt;。大多数数据库可以适合 3-4 层的 B-Tree，不需要遍历非常深的页面层次即可找到所需的页。分支因子为 500 的 4KB 页的四级树可以存储最多 256 TB 的数据。&lt;/p&gt;
+
+&lt;h4 id=&quot;增加可靠性&quot;&gt;增加可靠性&lt;/h4&gt;
+
+&lt;p&gt;B-Tree 底层的基本写操作是使用新数据覆盖磁盘上的旧页，这与 LSM-Tree 完全不同。LSM-Tree 仅追加更新文件，虽然最终也会删除过时文件但它不会修改文件。这种覆盖操作时一种比较危险的操作，如果在写数据期间数据库发生了崩溃，则会导致索引数据丢失。为了解决这一问题，常见的 B-Tree 的实现需要支持磁盘上额外的数据结构：预写日志（write-ahead log, WAL），这是一个仅支持追加修改的文件，每个 B-Tree 的修改必须先更新 WAL 然后再修改树本身的页。这样一来，数据库在崩溃后需要恢复时，该日志可以用于将 B-Tree 恢复到最近一致的状态。&lt;/p&gt;
+
+&lt;h4 id=&quot;优化&quot;&gt;优化&lt;/h4&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;一些数据库不采用 WAL，而是采用写时复制的方式来进行崩溃恢复&lt;/li&gt;
+  &lt;li&gt;保存键的缩略信息而不是完整的键，这样可以在页中压入更多的键&lt;/li&gt;
+  &lt;li&gt;尝试对树进行布局，使相邻叶子页可以按顺序保存在磁盘上&lt;/li&gt;
+  &lt;li&gt;添加额外指针到叶子页使其变成一个双向链表，这样可以顺序扫描而无需跳回父页&lt;/li&gt;
+  &lt;li&gt;借鉴一些日志结构的想法来减少磁盘寻道&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h4 id=&quot;与-lsm-tree-对比&quot;&gt;与 LSM-Tree 对比&lt;/h4&gt;
+
+&lt;h5 id=&quot;lsm-tree&quot;&gt;LSM-Tree&lt;/h5&gt;
+
+&lt;p&gt;优点&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;根据经验，LSM-Tree 通常对于写入更快&lt;/li&gt;
+  &lt;li&gt;LSM-Tree 通常能承受比 B-Tree 更高的写入吞吐量&lt;/li&gt;
+  &lt;li&gt;LSM-Tree 可以支持更好地压缩&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;缺点&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;压缩过程有时会干扰正在进行的读写操作&lt;/li&gt;
+  &lt;li&gt;高写入吞吐量时，如果压缩没有仔细配置，就可能出现压缩速度无法匹配写入速度的情况。最终磁盘上未合并段的数量不断增加，直到磁盘空间不足&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h5 id=&quot;b-tree&quot;&gt;B-Tree&lt;/h5&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;根据经验，B-Tree 通常对于读取更快&lt;/li&gt;
+  &lt;li&gt;由于每个键都恰好唯一对应于索引中的某个位置，而在数据库中，事务隔离都是通过键范围上的锁来实现的，因此如果希望数据库提供强大的事务语义，B-Tree 会很有优势。并且在 B-Tree 索引中，这些锁可以直接定义到树中&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;其他索引&quot;&gt;其他索引&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;在索引中存值：
+    &lt;ul&gt;
+      &lt;li&gt;聚簇索引：clustered index，在索引中直接保存行数据&lt;/li&gt;
+      &lt;li&gt;覆盖索引：covering index，是聚簇索引和非聚簇索引的一种综合，在索引中保存一些表的列值，它可以支持只通过索引即可回答某些简单查询&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;多列索引：
+    &lt;ul&gt;
+      &lt;li&gt;级联索引：concatenated index，最常见的多列索引类型。实现原理是将一列追加到另一列，将几个字段简单地组合成一个键（索引的定义指定字段连接的顺序）&lt;/li&gt;
+      &lt;li&gt;多维索引：更普遍的一种查询多列的方法，一种选择是使用空格填充曲线将二维位置转换为单个数字，然后使用常见的 B-Tree，更常见的是使用专门的空间索引如 R 树。&lt;/li&gt;
+    &lt;/ul&gt;
+  &lt;/li&gt;
+  &lt;li&gt;全文搜索和模糊索引：在某个编辑距离内在同一文档中搜索彼此接近的单词的出现，常用在搜索引擎中&lt;/li&gt;
+  &lt;li&gt;内存数据库：内存数据库的性能优势并不是因为它们不需要从磁盘中读取，而是因为避免使用写磁盘的格式对内存数据机构编码的开销。此外，内存数据库提供了基于磁盘索引难以实现的某些数据模型。通过反缓存的方法，内存数据库架构可以扩展到支持远大于可用内存的数据集。&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;事务处理与分析处理&quot;&gt;事务处理与分析处理&lt;/h2&gt;
+
+&lt;p&gt;在商业数据处理的早期阶段，写入数据库通常对应于商业交易的场景，事务主要指组成一个逻辑单元的一组读写操作。尽管后来数据库开始被用于许多不同种类的数据如博客评论，通讯录联系人等，但其基本访问模式仍然与处理业务交易类似：应用程序使用索引中的某些键查找少量记录，根据用户输入插入或更新记录。由于这些应用程序是交互式的，所以这种访问模式被称为在线事务处理（online transaction processing, OLTP）。&lt;/p&gt;
+
+&lt;p&gt;然而数据库也开始越来越多地用于数据分析，数据分析具有非常不同的访问模式：需要查询大量记录，每个记录只读取少数几列，并计算统计信息而不是返回原始数据给用户。这种查询通常由业务分析师编写，为了区分它与数据库事务处理的模式，该模式被称为在线分析处理（online analytic processing, OLAP）。&lt;/p&gt;
+
+&lt;p&gt;OLTP 和 OLAP 之间的区别有时并不那么明确，它们之间的一些典型特征如下表所示。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;../images/blog/ddia/chapter-3/oltp-vs-olap.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;最初，相同的数据库可以同时用于 OLTP 和 OLAP，在这方面 SQL 被证明是非常灵活的。然而目前的趋势是，公司放弃使用 OLTP 系统用于分析目的，而是在单独的数据库上进行分析，这种单独的数据库被称为数据仓库（data warehouse）&lt;/p&gt;
+
+&lt;h3 id=&quot;数据仓库&quot;&gt;数据仓库&lt;/h3&gt;
+
+&lt;p&gt;一般来说，OLTP 存储的是对于业务运行至关重要的数据，所以往往期待它们高可用，处理的延迟足够低。数据库管理员通常不愿意在 OLTP 数据库上直接运行临时分析查询，因为这种查询通常代价很高，需要扫描大量数据集，有可能会损害并发执行事务的性能。&lt;/p&gt;
+
+&lt;p&gt;相比之下，数据仓库是单独的数据库，包含公司中各种 OLTP 系统的只读副本，对它进行操作不会影响已有 OLTP 系统。将数据导入数据仓库的过程被称为提取-转换-加载（Extract-Transform-Load, ETL）。&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Extract：从 OLTP 数据库使用周期性数据转储或连续更新流来提取数据&lt;/li&gt;
+  &lt;li&gt;Transform：转换为分析友好模式，执行必要的清理&lt;/li&gt;
+  &lt;li&gt;Load：将转换好的数据加载到数据仓库中&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;&lt;img src=&quot;../images/blog/ddia/chapter-3/etl.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;使用单独的数据仓库进行数据分析的一大优势在于，数据仓库可以针对分析访问模式而进行优化。对于 OLTP 中的索引算法在分析查询中往往不适用。&lt;/p&gt;
+
+&lt;p&gt;表面上，数据仓库和关系型 OLTP 数据库看起来相似，因为它们都具有 SQL 查询接口，但其实它们的内部实现差异很大，它们针对各自查询的模式进行了优化。尽管一些数据库在同一产品中支持事务处理和数据仓库，但它们越来越成为两个独立的存储和查询引擎。&lt;/p&gt;
+
+&lt;h2 id=&quot;小结&quot;&gt;小结&lt;/h2&gt;
+
+&lt;p&gt;本章简单介绍了数据库内部如何处理存储与检索，概括来讲，存储引擎分为两大类：OLTP 和 OLAP，它们的典型访问模式存在很大差异：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;OLTP 系统通常面向用户，可能收到大量的请求。应用程序使用某种键来记录请求，而存储引擎使用索引来查找所请求键的数据，磁盘寻道时间往往是瓶颈&lt;/li&gt;
+  &lt;li&gt;OLAP 系统不直接面对最终用户，往往由业务分析师使用，处理的查询请求数目远低于 OLTP 系统，但每个查询的要求都非常苛刻。需要在短时间内扫描数百万条记录，磁盘带宽通常是瓶颈，面向列的存储对于这种工作负载成为如今流行的解决方案&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;OLTP 方面，主要有两大流派存储引擎：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;日志结构流派：只允许追加式更新文件和删除过时的文件，但不会修改已写入的文件。SSTables，LSM-tree，Cassandra，HBase，Lucene 等属于此类。&lt;/li&gt;
+  &lt;li&gt;原地更新流派：将磁盘视为可以覆盖的一组固定大小的页，B-Tree 是典型代表。&lt;/li&gt;
+&lt;/ul&gt;</content><author><name>Wu, Yuejiang</name></author><category term="DDIA" /><category term="Learn" /><summary type="html">索引</summary></entry><entry><title type="html">Eureka 4.0.1 配置</title><link href="https://226wyj.github.io/2023/08/18/Eureka-config/" rel="alternate" type="text/html" title="Eureka 4.0.1 配置" /><published>2023-08-18T00:00:00-07:00</published><updated>2023-08-18T00:00:00-07:00</updated><id>https://226wyj.github.io/2023/08/18/Eureka-config</id><content type="html" xml:base="https://226wyj.github.io/2023/08/18/Eureka-config/">&lt;h2 id=&quot;background&quot;&gt;Background&lt;/h2&gt;
+
+&lt;p&gt;最近在学习 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Spring Cloud&lt;/code&gt;，其中有一个很常用的服务注册与发现组件名叫 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Eureka&lt;/code&gt;。由于笔者看的视频教程中使用的 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Eureka&lt;/code&gt; 和 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Spring Boot&lt;/code&gt; 版本都比较老，因此特意用这篇文章来记录一下如何在 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Spring Boot 3.1.2&lt;/code&gt; 下安装和配置 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Eureka 4.0.1&lt;/code&gt;。&lt;/p&gt;
+
+&lt;p&gt;我们需要提供相应的 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;username&lt;/code&gt; 和 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;password&lt;/code&gt; 来进行连接。 由于我们的用户名和对应密码已经存储在 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Vault&lt;/code&gt; 中，因此在这里，我采用的方法为字符串直接拼接的方式来生成完整的 Connection String。&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;MongoClient&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;atlasMongoClient&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nd&quot;&gt;@Value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;${atlas.mongo.username}&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;
+                                    &lt;span class=&quot;nd&quot;&gt;@Value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;${atlas.mongo.password}&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;final&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;connectionString&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;
+            &lt;span class=&quot;s&quot;&gt;&quot;mongodb+srv://%s:%s@your-database-name.mongodb.net&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;nc&quot;&gt;MongoClientSettings&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;MongoClientSettings&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;builder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;applyConnectionString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;ConnectionString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;connectionString&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;build&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+
+    &lt;span class=&quot;c1&quot;&gt;// Create a new client and connect to the server&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;no&quot;&gt;LOG&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;info&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Using Atlas mongo client&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;MongoClients&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;create&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;settings&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;MongoException&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;no&quot;&gt;LOG&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;error&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;Error happened when creating Atlas mongo client&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;printStackTrace&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;然而在提交了修改之后我发现部署失败了，经过查看应用日志找到根本原因，显示的报错信息为：&lt;/p&gt;
+
+&lt;div class=&quot;language-plaintext highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;java.lang.IllegalArgumentException: URLDecoder: Illegal hex characters in escape (%) pattern - For input string: &quot;Fl&quot;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;analysis&quot;&gt;Analysis&lt;/h2&gt;
+
+&lt;p&gt;首先根据报错信息来看，问题出在我们的 URL 上：出现了非法字符 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%&lt;/code&gt;。通过查看密码内容得知，在我们的密码中确实含有一个 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%&lt;/code&gt;。由此则可以解释问题原因：&lt;/p&gt;
+
+&lt;p&gt;在 URL 中， 百分号（%）后面应该跟着两个十六进制字符，表示一个 ASCII 字符的编码。而由于我们的密码中包含了 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%&lt;/code&gt;（假如它的内容为 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ABC%FL&lt;/code&gt;），当我们不做任何处理直接将它拼接进 URL 中时，URL decoder 会将 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;%FL&lt;/code&gt; 当成一个 ASCII 字符编码去处理，很显然就会报错了。&lt;/p&gt;
+
+&lt;h2 id=&quot;solution&quot;&gt;Solution&lt;/h2&gt;
+
+&lt;p&gt;在使用字符串拼接 URL 之前，我们可以使用 Java 提供的 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;URLEncoder&lt;/code&gt; 对字符串进行编码，以便将其作为 URI 参数传递，使用方法如下：&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;encodedPassword&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;URLEncoder&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;encode&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;password&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;UTF-8&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;connectionString&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;format&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;
+        &lt;span class=&quot;s&quot;&gt;&quot;mongodb+srv://%s:%s@your-database-name.mongodb.net&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;username&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;encodedPassword&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;UnsupportedEncodingException&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;printStackTrace&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;由此问题得以解决。&lt;/p&gt;
+
+&lt;h2 id=&quot;附录完整-pom-文件&quot;&gt;附录：完整 pom 文件&lt;/h2&gt;
+
+&lt;h3 id=&quot;父工程&quot;&gt;父工程&lt;/h3&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;project&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;xmlns=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://maven.apache.org/POM/4.0.0&quot;&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;xmlns:xsi=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://www.w3.org/2001/XMLSchema-instance&quot;&lt;/span&gt;
+         &lt;span class=&quot;na&quot;&gt;xsi:schemaLocation=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;modelVersion&amp;gt;&lt;/span&gt;4.0.0&lt;span class=&quot;nt&quot;&gt;&amp;lt;/modelVersion&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;packaging&amp;gt;&lt;/span&gt;pom&lt;span class=&quot;nt&quot;&gt;&amp;lt;/packaging&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;modules&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;module&amp;gt;&lt;/span&gt;microservice_user&lt;span class=&quot;nt&quot;&gt;&amp;lt;/module&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;module&amp;gt;&lt;/span&gt;microservice_movie&lt;span class=&quot;nt&quot;&gt;&amp;lt;/module&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;module&amp;gt;&lt;/span&gt;eureka_server&lt;span class=&quot;nt&quot;&gt;&amp;lt;/module&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/modules&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;parent&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;org.springframework.boot&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;spring-boot-starter-parent&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;version&amp;gt;&lt;/span&gt;3.1.2&lt;span class=&quot;nt&quot;&gt;&amp;lt;/version&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;relativePath/&amp;gt;&lt;/span&gt; &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- lookup parent from repository --&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/parent&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;com.example&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;sm1234_parent&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;version&amp;gt;&lt;/span&gt;0.0.1-SNAPSHOT&lt;span class=&quot;nt&quot;&gt;&amp;lt;/version&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;name&amp;gt;&lt;/span&gt;sm1234_parent&lt;span class=&quot;nt&quot;&gt;&amp;lt;/name&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;description&amp;gt;&lt;/span&gt;sm1234_parent&lt;span class=&quot;nt&quot;&gt;&amp;lt;/description&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;properties&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;project.build.sourceEncoding&amp;gt;&lt;/span&gt;UTF-8&lt;span class=&quot;nt&quot;&gt;&amp;lt;/project.build.sourceEncoding&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;project.reporting.outputEncoding&amp;gt;&lt;/span&gt;UTF-8&lt;span class=&quot;nt&quot;&gt;&amp;lt;/project.reporting.outputEncoding&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;java.version&amp;gt;&lt;/span&gt;17&lt;span class=&quot;nt&quot;&gt;&amp;lt;/java.version&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/properties&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;dependencies&amp;gt;&lt;/span&gt;
+
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;dependency&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;org.springframework.boot&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;spring-boot-starter-web&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/dependency&amp;gt;&lt;/span&gt;
+
+
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;dependency&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;org.projectlombok&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;lombok&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;optional&amp;gt;&lt;/span&gt;true&lt;span class=&quot;nt&quot;&gt;&amp;lt;/optional&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/dependency&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;dependency&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;org.springframework.boot&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;spring-boot-starter-test&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;scope&amp;gt;&lt;/span&gt;test&lt;span class=&quot;nt&quot;&gt;&amp;lt;/scope&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/dependency&amp;gt;&lt;/span&gt;
+
+        &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-dependencies --&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;dependency&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;org.springframework.cloud&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;spring-cloud-dependencies&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;version&amp;gt;&lt;/span&gt;2022.0.2&lt;span class=&quot;nt&quot;&gt;&amp;lt;/version&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;type&amp;gt;&lt;/span&gt;pom&lt;span class=&quot;nt&quot;&gt;&amp;lt;/type&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;scope&amp;gt;&lt;/span&gt;import&lt;span class=&quot;nt&quot;&gt;&amp;lt;/scope&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/dependency&amp;gt;&lt;/span&gt;
+
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/dependencies&amp;gt;&lt;/span&gt;
+
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;build&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;plugins&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;plugin&amp;gt;&lt;/span&gt;
+                &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;org.springframework.boot&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+                &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;spring-boot-maven-plugin&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+                &lt;span class=&quot;nt&quot;&gt;&amp;lt;configuration&amp;gt;&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;&amp;lt;excludes&amp;gt;&lt;/span&gt;
+                        &lt;span class=&quot;nt&quot;&gt;&amp;lt;exclude&amp;gt;&lt;/span&gt;
+                            &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;org.projectlombok&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+                            &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;lombok&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+                        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/exclude&amp;gt;&lt;/span&gt;
+                    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/excludes&amp;gt;&lt;/span&gt;
+                &lt;span class=&quot;nt&quot;&gt;&amp;lt;/configuration&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;/plugin&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/plugins&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/build&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/project&amp;gt;&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;子模块---eureka-server&quot;&gt;子模块 - Eureka Server&lt;/h3&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;project&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;xmlns=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://maven.apache.org/POM/4.0.0&quot;&lt;/span&gt;
+         &lt;span class=&quot;na&quot;&gt;xmlns:xsi=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://www.w3.org/2001/XMLSchema-instance&quot;&lt;/span&gt;
+         &lt;span class=&quot;na&quot;&gt;xsi:schemaLocation=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;modelVersion&amp;gt;&lt;/span&gt;4.0.0&lt;span class=&quot;nt&quot;&gt;&amp;lt;/modelVersion&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;parent&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;com.example&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;sm1234_parent&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;version&amp;gt;&lt;/span&gt;0.0.1-SNAPSHOT&lt;span class=&quot;nt&quot;&gt;&amp;lt;/version&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/parent&amp;gt;&lt;/span&gt;
+
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;cn.sm1234&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;eureka_server&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;properties&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;maven.compiler.source&amp;gt;&lt;/span&gt;17&lt;span class=&quot;nt&quot;&gt;&amp;lt;/maven.compiler.source&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;maven.compiler.target&amp;gt;&lt;/span&gt;17&lt;span class=&quot;nt&quot;&gt;&amp;lt;/maven.compiler.target&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;project.build.sourceEncoding&amp;gt;&lt;/span&gt;UTF-8&lt;span class=&quot;nt&quot;&gt;&amp;lt;/project.build.sourceEncoding&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/properties&amp;gt;&lt;/span&gt;
+
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;dependencies&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;c&quot;&gt;&amp;lt;!-- https://mvnrepository.com/artifact/org.springframework.cloud/spring-cloud-starter-netflix-eureka-server --&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;dependency&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;org.springframework.cloud&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;spring-cloud-starter-netflix-eureka-server&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;version&amp;gt;&lt;/span&gt;4.0.1&lt;span class=&quot;nt&quot;&gt;&amp;lt;/version&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/dependency&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/dependencies&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/project&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;子模块---eureka-client&quot;&gt;子模块 - Eureka Client&lt;/h3&gt;
+
+&lt;div class=&quot;language-xml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&amp;gt;&lt;/span&gt;
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;project&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;xmlns=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://maven.apache.org/POM/4.0.0&quot;&lt;/span&gt;
+         &lt;span class=&quot;na&quot;&gt;xmlns:xsi=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://www.w3.org/2001/XMLSchema-instance&quot;&lt;/span&gt;
+         &lt;span class=&quot;na&quot;&gt;xsi:schemaLocation=&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd&quot;&lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;modelVersion&amp;gt;&lt;/span&gt;4.0.0&lt;span class=&quot;nt&quot;&gt;&amp;lt;/modelVersion&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;parent&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;com.example&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;sm1234_parent&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;version&amp;gt;&lt;/span&gt;0.0.1-SNAPSHOT&lt;span class=&quot;nt&quot;&gt;&amp;lt;/version&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/parent&amp;gt;&lt;/span&gt;
+
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;org.example&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;microservice_movie&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;properties&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;maven.compiler.source&amp;gt;&lt;/span&gt;17&lt;span class=&quot;nt&quot;&gt;&amp;lt;/maven.compiler.source&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;maven.compiler.target&amp;gt;&lt;/span&gt;17&lt;span class=&quot;nt&quot;&gt;&amp;lt;/maven.compiler.target&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;project.build.sourceEncoding&amp;gt;&lt;/span&gt;UTF-8&lt;span class=&quot;nt&quot;&gt;&amp;lt;/project.build.sourceEncoding&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/properties&amp;gt;&lt;/span&gt;
+
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;dependencies&amp;gt;&lt;/span&gt;
+
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;dependency&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;groupId&amp;gt;&lt;/span&gt;org.springframework.cloud&lt;span class=&quot;nt&quot;&gt;&amp;lt;/groupId&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;artifactId&amp;gt;&lt;/span&gt;spring-cloud-starter-netflix-eureka-client&lt;span class=&quot;nt&quot;&gt;&amp;lt;/artifactId&amp;gt;&lt;/span&gt;
+            &lt;span class=&quot;nt&quot;&gt;&amp;lt;version&amp;gt;&lt;/span&gt;4.0.1&lt;span class=&quot;nt&quot;&gt;&amp;lt;/version&amp;gt;&lt;/span&gt;
+        &lt;span class=&quot;nt&quot;&gt;&amp;lt;/dependency&amp;gt;&lt;/span&gt;
+    &lt;span class=&quot;nt&quot;&gt;&amp;lt;/dependencies&amp;gt;&lt;/span&gt;
+
+&lt;span class=&quot;nt&quot;&gt;&amp;lt;/project&amp;gt;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Wu, Yuejiang</name></author><category term="learn" /><summary type="html">Background</summary></entry><entry><title type="html">使用字符串拼接 URL 时要注意特殊字符编码</title><link href="https://226wyj.github.io/2023/08/15/URI-bug/" rel="alternate" type="text/html" title="使用字符串拼接 URL 时要注意特殊字符编码" /><published>2023-08-15T00:00:00-07:00</published><updated>2023-08-15T00:00:00-07:00</updated><id>https://226wyj.github.io/2023/08/15/URI-bug</id><content type="html" xml:base="https://226wyj.github.io/2023/08/15/URI-bug/">&lt;h2 id=&quot;background&quot;&gt;Background&lt;/h2&gt;
 
 &lt;p&gt;最近在做数据库迁移，需要将组里目前的 Mongo Cluster 从旧平台迁移到 Atlas 上。使用另一个平台的 Mongo 要求我们把 Connection String 改成另一个平台提供的 URI，并以此来进行数据库连接和生成 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MongoClient&lt;/code&gt; 对象。&lt;/p&gt;
 
@@ -693,217 +1072,4 @@ Explanation: The recursive calls are as follow:
             &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;right&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;construct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;root_idx&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:])&lt;/span&gt;
             &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;
         &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;construct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Leetcode" /><summary type="html">Original Leetcode Problem Link</summary></entry><entry><title type="html">给 Mac 添加右键菜单「使用 VSCode 打开」</title><link href="https://226wyj.github.io/2020/10/28/add-vscode-to-right-click/" rel="alternate" type="text/html" title="给 Mac 添加右键菜单「使用 VSCode 打开」" /><published>2020-10-28T00:00:00-07:00</published><updated>2020-10-28T00:00:00-07:00</updated><id>https://226wyj.github.io/2020/10/28/add-vscode-to-right-click</id><content type="html" xml:base="https://226wyj.github.io/2020/10/28/add-vscode-to-right-click/">&lt;p&gt;最终的实现效果是在文件 / 文件夹上右击时，会出现菜单项「用 VSCode 打开」，点击后会启动 Visual Studio Code 打开对应的文件 / 文件夹。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;/images/posts/mac/open-with-vscode.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;实现步骤&quot;&gt;实现步骤&lt;/h2&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;
-    &lt;p&gt;打开「自动操作.app」，就是小机器人图标那个；&lt;/p&gt;
-
-    &lt;p&gt;&lt;img src=&quot;/images/posts/mac/auto-operate.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;&lt;kbd&gt;command + n&lt;/kbd&gt; 新建文稿，在「选取文稿类型」里选择「快速操作」；&lt;/p&gt;
-
-    &lt;p&gt;&lt;img src=&quot;/images/posts/mac/quick-operate.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;按以下步骤操作：&lt;/p&gt;
-
-    &lt;p&gt;第五步贴入代码&lt;/p&gt;
-
-    &lt;div class=&quot;language-sh highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;k&quot;&gt;for &lt;/span&gt;f &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$@&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
- &lt;span class=&quot;k&quot;&gt;do
-     &lt;/span&gt;open &lt;span class=&quot;nt&quot;&gt;-a&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;Visual Studio Code&quot;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$f&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;&lt;/span&gt;
- &lt;span class=&quot;k&quot;&gt;done&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-
-    &lt;p&gt;&lt;img src=&quot;/images/posts/mac/open-with-vscode-steps.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-    &lt;p&gt;以上代码片段的大概意思是对于传入的一个或多个参数，都使用 Visual Studio Code 这个 APP 打开（将以下步骤配置完成后，可以分别选中一个、多个文件 / 文件夹，然后右键用 VSCode 打开看看效果）。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;&lt;kbd&gt;command + s&lt;/kbd&gt; 保存为 「用 VSCode 打开」：&lt;/p&gt;
-
-    &lt;p&gt;&lt;img src=&quot;/images/posts/mac/open-with-vscode-rename.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;好了，现在试试在 Finder 里右键一个文件，就可以直接看到「用 VSCode 打开」菜单，右键一个文件夹，就可以看到「服务」-「用 VSCode 打开」菜单了。&lt;/p&gt;
-
-    &lt;p&gt;&lt;img src=&quot;/images/posts/mac/open-with-vscode-file.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;愉快地使用 Visual Studio Code 和各种文件、文件夹玩耍吧。&lt;/p&gt;
-
-&lt;h2 id=&quot;编辑&quot;&gt;编辑&lt;/h2&gt;
-
-&lt;p&gt;以后如果想修改上面这个快速操作，有两种方法：&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;
-    &lt;p&gt;可以打开「自动操作.app」，然后「文件」-「打开最近使用」 -「用 VSCode 打开.workflow」；&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;如果找不到这个操作，可以「文件」-「打开」-个人目录 / 资源库 / Services / 用 VSCode 打开.workflow&lt;/p&gt;
-
-    &lt;p&gt;&lt;img src=&quot;/images/posts/mac/open-with-vscode-open.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-    &lt;p&gt;如果个人目录下不显示「资源库」，按 &lt;kbd&gt;Command + Shift + .&lt;/kbd&gt;。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h2 id=&quot;参考&quot;&gt;参考&lt;/h2&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://blog.csdn.net/u013069892/article/details/83147239&quot;&gt;https://blog.csdn.net/u013069892/article/details/83147239&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</content><author><name>Wu, Yuejiang</name></author><category term="VSCode" /><summary type="html">最终的实现效果是在文件 / 文件夹上右击时，会出现菜单项「用 VSCode 打开」，点击后会启动 Visual Studio Code 打开对应的文件 / 文件夹。</summary></entry><entry><title type="html">使用 jsDelivr 免费加速 GitHub Pages 博客的静态资源（二）</title><link href="https://226wyj.github.io/2020/10/07/cdn-for-github-pages-2/" rel="alternate" type="text/html" title="使用 jsDelivr 免费加速 GitHub Pages 博客的静态资源（二）" /><published>2020-10-07T00:00:00-07:00</published><updated>2020-10-07T00:00:00-07:00</updated><id>https://226wyj.github.io/2020/10/07/cdn-for-github-pages-2</id><content type="html" xml:base="https://226wyj.github.io/2020/10/07/cdn-for-github-pages-2/">&lt;p&gt;之前写过一篇 &lt;a href=&quot;https://mazhuang.org/2020/05/01/cdn-for-github-pages/&quot;&gt;使用 jsDelivr 免费加速 GitHub Pages 博客的静态资源&lt;/a&gt;，在那之后，又陆续想到并实施了几点利用 jsDelivr 进一步加速静态资源加载的措施，新起一篇作为记录和分享。&lt;/p&gt;
-
-&lt;p&gt;继上一轮改造过后，比较拖页面加载速度的主要有三点：&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;页面首个请求响应时间；&lt;/li&gt;
-  &lt;li&gt;图片资源加载时间；&lt;/li&gt;
-  &lt;li&gt;站内搜索引用的 JSON 资源加载时间。&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;第 1 点在页面仍然托管在 GitHub Pages 的前提下，似乎没有什么好办法能产生质的飞跃；本篇主要改善了第 2 点和第 3 点。&lt;/p&gt;
-
-&lt;h2 id=&quot;0x01-图片资源加速&quot;&gt;0x01 图片资源加速&lt;/h2&gt;
-
-&lt;p&gt;这里所说的图片主要是指文章里引用的图片。&lt;/p&gt;
-
-&lt;p&gt;我一直将图片放在博客源码根目录的 images 文件夹下，引用图片的习惯写法是这样的：&lt;/p&gt;
-
-&lt;div class=&quot;language-markdown highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;![&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;after use cdn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;](&lt;/span&gt;&lt;span class=&quot;sx&quot;&gt;/images/posts/github/cdn-after.png&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;如果想将这个图片地址替换为 jsDelivr 的地址，需要做的就是将 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/images&lt;/code&gt; 替换为 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;https://cdn.jsdelivr.net/gh/mzlogin/mzlogin.github.io@master/images&lt;/code&gt;。&lt;/p&gt;
-
-&lt;p&gt;一处一处替换行不行？当然也行，但后面写新文章时要引用图片，还得手动写这一长串，不方便；万一 jsDeliver 出状况，也不好一键切换回来。有没有一劳永逸的方法？当然也有，我们从 Jekyll 的 layout 机制来想办法。&lt;/p&gt;
-
-&lt;p&gt;Jekyll 的 layout 可以理解为页面模板，它是可以继承的，比如我的博客的所有页面模板有一个共同的祖先模板 _layouts/default.html，模板里可以使用 &lt;a href=&quot;https://github.com/Shopify/liquid/wiki/Liquid-for-Designers&quot;&gt;Liquid&lt;/a&gt; 语法对内容进行处理，我们可以利用这一点，来自动完成批量替换的工作。&lt;/p&gt;
-
-&lt;p&gt;关键代码如下：&lt;/p&gt;
-
-&lt;div class=&quot;language-liquid highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;p&quot;&gt;{%&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;assign&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;assets_base_url&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;site&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;%}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;{%&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;site&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;cdn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;jsdelivr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;enabled&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;%}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;{%&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;assign&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;assets_base_url&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;https://cdn.jsdelivr.net/gh/&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;site&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;repository&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;@master&apos;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;%}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;{%&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;endif&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;%}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;{%&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;assign&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;assets_images_url&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;src=&quot;&apos;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;assets_base_url&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;/images&quot;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;%}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;{%&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;include&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;header.html&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;%}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;{{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;content&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;|&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nf&quot;&gt;replace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;src=&quot;/images&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;assets_images_url&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;{%&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nt&quot;&gt;include&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;footer.html&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;%}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;大意就是，如果打开了启用 jsDelivr 加速的开关，就将 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;content&lt;/code&gt; 里的 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;src=&quot;/images&quot;&lt;/code&gt; 替换为 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;src=&quot;https://cdn.jsdelivr.net/gh/mzlogin/mzlogin.github.io@master/images&quot;&lt;/code&gt;，否则替换为 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;src=&quot;https://mazhuang.org/images&quot;&lt;/code&gt;。&lt;/p&gt;
-
-&lt;p&gt;以上便达成了我们的目的。&lt;/p&gt;
-
-&lt;h2 id=&quot;0x02-站内搜索引用的-json-资源加速&quot;&gt;0x02 站内搜索引用的 JSON 资源加速&lt;/h2&gt;
-
-&lt;p&gt;我是使用 &lt;a href=&quot;https://github.com/christian-fei/Simple-Jekyll-Search&quot;&gt;Simple-Jekyll-Search&lt;/a&gt; 这个 JavaScript 库来实现站内搜索的，它的搜索数据是来自一个动态生成的 JSON 文件。&lt;/p&gt;
-
-&lt;p&gt;这个 JSON 文件编译前长这样：&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://github.com/mzlogin/mzlogin.github.io/blob/master/assets/search_data.json&quot;&gt;https://github.com/mzlogin/mzlogin.github.io/blob/master/assets/search_data.json&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;Jekyll 编译后长这样：&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://mazhuang.org/assets/search_data.json&quot;&gt;https://mazhuang.org/assets/search_data.json&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;这样的资源是没有办法直接通过替换网址来用 jsDelivr 加速的，因为 jsDelivr 上缓存的是编译前的文件，而我们需要的是编译后的。&lt;/p&gt;
-
-&lt;p&gt;那我们就想办法：&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;将博客源码编译；&lt;/li&gt;
-  &lt;li&gt;将编译结果保存到另一个分支；&lt;/li&gt;
-  &lt;li&gt;通过 jsDelivr 引用新分支上的这个文件。&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;这些步骤可以通过 GitHub 去年推出的新特性 &lt;a href=&quot;https://github.com/features/actions&quot;&gt;Actions&lt;/a&gt; 来完成，在我们每一次向博客源码仓库 push 代码时自动触发。&lt;/p&gt;
-
-&lt;p&gt;关键步骤如下：&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;
-    &lt;p&gt;在 GitHub 新建一个 Personal access Token：&lt;/p&gt;
-
-    &lt;p&gt;Settings –&amp;gt; Developer settings –&amp;gt; Personal access tokens –&amp;gt; Generate new token –&amp;gt; 填写 note，勾选 public_repo，生成之后复制 token 值备用。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;在博客源码仓库的 Settings –&amp;gt; Secrets –&amp;gt; New secret，Name 填 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;ACCESS_TOKEN&lt;/code&gt;，Value 填第 1 步里复制的 token 值；&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;在博客源码根目录下新建文件 .github/workflows/ci.yml，内容如下：&lt;/p&gt;
-
-    &lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Build and Deploy&lt;/span&gt;
-
- &lt;span class=&quot;na&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
-   &lt;span class=&quot;na&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
-     &lt;span class=&quot;na&quot;&gt;branches&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;[&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;master&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;]&lt;/span&gt;
-
- &lt;span class=&quot;na&quot;&gt;jobs&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
-   &lt;span class=&quot;na&quot;&gt;build-and-deploy&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
-     &lt;span class=&quot;na&quot;&gt;runs-on&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;ubuntu-latest&lt;/span&gt;
-     &lt;span class=&quot;na&quot;&gt;steps&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
-       &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Checkout&lt;/span&gt;
-         &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;actions/checkout@v2.3.1&lt;/span&gt;
-         &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; 
-           &lt;span class=&quot;na&quot;&gt;persist-credentials&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;false&lt;/span&gt;
-
-       &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Set Ruby &lt;/span&gt;&lt;span class=&quot;m&quot;&gt;2.7&lt;/span&gt;
-         &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;actions/setup-ruby@v1&lt;/span&gt;
-         &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
-           &lt;span class=&quot;na&quot;&gt;ruby-version&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;2.7&lt;/span&gt;
-
-       &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Install and Build&lt;/span&gt;
-         &lt;span class=&quot;na&quot;&gt;run&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;pi&quot;&gt;|&lt;/span&gt;
-           &lt;span class=&quot;s&quot;&gt;gem install bundler&lt;/span&gt;
-           &lt;span class=&quot;s&quot;&gt;bundle install&lt;/span&gt;
-           &lt;span class=&quot;s&quot;&gt;bundle exec jekyll build&lt;/span&gt;
-           &lt;span class=&quot;no&quot;&gt; &lt;/span&gt;
-       &lt;span class=&quot;pi&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;na&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;Deploy&lt;/span&gt;
-         &lt;span class=&quot;na&quot;&gt;uses&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;JamesIves/github-pages-deploy-action@3.6.2&lt;/span&gt;
-         &lt;span class=&quot;na&quot;&gt;with&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
-           &lt;span class=&quot;na&quot;&gt;ACCESS_TOKEN&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;$&lt;/span&gt;
-           &lt;span class=&quot;na&quot;&gt;BRANCH&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;built&lt;/span&gt;
-           &lt;span class=&quot;na&quot;&gt;FOLDER&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;_site&lt;/span&gt;
-           &lt;span class=&quot;na&quot;&gt;CLEAN&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;true&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-
-    &lt;p&gt;大意就是在向 master 分支 push 代码时，自动执行 checkout、初始化 ruby 环境、安装 Jekyll 并编译博客源码的工作，最后将编译生成的 _site 目录里的内容推送到 built 分支。对 GitHub Actions 感兴趣的同学可以自行参考官方说明学习。&lt;/p&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;修改引用 JSON 文件的地方，比如我的 _includes/sidebar-search.html 里的写法由：&lt;/p&gt;
-
-    &lt;div class=&quot;language-javascript highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;nx&quot;&gt;json&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;https://226wyj.github.io/assets/search_data.json&lt;/span&gt;&lt;span class=&quot;dl&quot;&gt;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-
-    &lt;p&gt;改为了&lt;/p&gt;
-
-    &lt;div class=&quot;language-liquid highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt; &lt;span class=&quot;p&quot;&gt;{%&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;site&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;cdn&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;jsdelivr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;enabled&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;ow&quot;&gt;and&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;site&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;ow&quot;&gt;contains&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&apos;mazhuang.org&apos;&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;%}&lt;/span&gt;
-   json: &apos;https://cdn.jsdelivr.net/gh/mzlogin/mzlogin.github.io@built/assets/search_data.json&apos;,
- &lt;span class=&quot;p&quot;&gt;{%&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;%}&lt;/span&gt;
-   json: &apos;&lt;span class=&quot;p&quot;&gt;{{&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;site&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;url&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}}&lt;/span&gt;/assets/search_data.json&apos;,
- &lt;span class=&quot;p&quot;&gt;{%&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;endif&lt;/span&gt;&lt;span class=&quot;w&quot;&gt; &lt;/span&gt;&lt;span class=&quot;p&quot;&gt;%}&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;    &lt;/div&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;将以上更改推送到源码仓库，等待处理完成即可。&lt;/p&gt;
-  &lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;h2 id=&quot;0x03-结语&quot;&gt;0x03 结语&lt;/h2&gt;
-
-&lt;p&gt;经过以上改造，博客页面的加载速度又得到了小小的提升，所有相关源码可以在 &lt;a href=&quot;https://github.com/mzlogin/mzlogin.github.io&quot;&gt;https://github.com/mzlogin/mzlogin.github.io&lt;/a&gt; 找到，有相关心得或建议的朋友欢迎交流指正。&lt;/p&gt;
-
-&lt;p&gt;相关文章：&lt;/p&gt;
-
-&lt;ul&gt;
-  &lt;li&gt;&lt;a href=&quot;https://mazhuang.org/2020/05/01/cdn-for-github-pages/&quot;&gt;使用 jsDelivr 免费加速 GitHub Pages 博客的静态资源&lt;/a&gt;&lt;/li&gt;
-&lt;/ul&gt;</content><author><name>Wu, Yuejiang</name></author><category term="GitHub" /><summary type="html">之前写过一篇 使用 jsDelivr 免费加速 GitHub Pages 博客的静态资源，在那之后，又陆续想到并实施了几点利用 jsDelivr 进一步加速静态资源加载的措施，新起一篇作为记录和分享。</summary></entry></feed>
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Leetcode" /><summary type="html">Original Leetcode Problem Link</summary></entry></feed>

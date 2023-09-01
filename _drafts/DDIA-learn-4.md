@@ -55,3 +55,43 @@ JSON、XML 和 CSV 都是文本格式，可读性高，但除了语法外也有�
 这三种编码方式中，JSON 由于其简单性以及在 Web 浏览器中支持而变成最流行的一种编码方式，但它相比二进制编码占据的空间过大。人们也开发了大量的二进制编码用以支持 JSON（如 BSON、BJSON 等），但没有一个像 JSON 和 XML 那样被广泛采用
 
 ### 方案 3 - Thrift 与 Protocol Buffers
+
+Apache Thrift 和 Protocol Buffers（protobuf）是基于相同原理的两种二进制编码库，各有对应的代码生成工具。
+
+Thrift 有两种不同的二进制编码格式，分别称为 BinaryProtocol 和 CompactProtocol。假如我们要对下面的结构体进行编码：
+
+```thrift
+struct Person {
+    1: required string          userName,
+    2: optional i64             favoriteNumber,
+    3: optional list<string>    interests
+}
+```
+
+采用 BinaryProtocol 编码一共需要 59 字节，如下所示：
+
+![](/images/blog/ddia/chapter-4/thrift-binaryprotocol.png)
+
+通过图中的字段分解我们可以得知，每个字段都有一个类型注释（前 2 个字节），并且可以在需要时指定长度。数据中出现的字符串也被编码为 ASCII 码。不过也可以发现，在编码中并没有字段名（即 userName，favoriteNumber，interests），但却包含数字类型的字段标签（1,2,3），这是因为字段标签就像是字段的别名，用来指示当前字段，但更加紧凑，因此可以省去引用字段全名。
+
+采用 CompactProtocol 编码在语义上等价于 BinaryProtocol 但只要 34 字节即可，如下图所示。
+
+![](/images/blog/ddia/chapter-4/thrift-compactprotocol.png)
+
+可以发现，字段类型和标签号被打包进了单字节中，并使用可变长度整数实现。对于数字 1337，不使用全部的 8 字节，而是使用两个字节进行编码，每个字节的最高位用来指示是否还有更多的字节。
+
+如果采用 Protocol Buffers 来对上述结构体的等价结构进行编码（如下所示）
+
+```protobuf
+message Person {
+    required string user_name       = 1;
+    optional int64 favorite_number  = 2;
+    repeated string interests       = 3;
+}
+```
+
+则只用 33 字节就可以表示相同记录，可以看到它与 Thrift CompactProtocol 的编码十分相似：
+
+![](/images/blog/ddia/chapter-4/protobuf.png)
+
+对于 `protobuf` 字段被标记为 `required` 还是 `optional`，在编码中都没有任何影响，只是在运行检查时会进行校验。

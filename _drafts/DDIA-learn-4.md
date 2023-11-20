@@ -95,3 +95,51 @@ message Person {
 ![](/images/blog/ddia/chapter-4/protobuf.png)
 
 对于 `protobuf` 字段被标记为 `required` 还是 `optional`，在编码中都没有任何影响，只是在运行检查时会进行校验。
+
+#### 兼容性讨论
+
+#### 字段标签兼容性
+
+字段标签就是我们在定义结构体时为属性名赋予的整数值，它是该字段的唯一标识。字段标签对于编码数据的含义至关重要，可以随意更改字段名称，因为从上面的编码格式我们也可以看出，编码永远不直接引用字段名称。但不能更改字段标签，它会导致现有编码无效。
+
+在添加新字段时，只需在原有的结构体中追加新字段并赋值一个新的字段标签即可。但要注意的是，为了考虑到向前的兼容性，因此不能将新字段设置为 `required`。
+
+在删除字段时，只能删除可选字段，使用 `required` 修饰的字段永远不能删除，而且不能再次使用相同的标签号码
+
+#### 数据类型兼容性
+
+改变字段的数据类型这种情况是有可能发生的，但会存在精度丢失或被截断的风险。
+
+对于 Protocol Buffer，它没有专门的列表或数组类型，而是用 `repeated` 标记来表示这样的一个重复字段。对于重复字段，表示同一个字段标签只是简单地多次出现在记录中。可以将 `optional` 字段更改为 `repeated` 字段，这样对于读取旧数据的新代码来说，可以看到一个包含零个或一个元素的列表；对于读取新数据的旧代码来说，只能看到列表的最后一个元素。
+
+Thrift 有列表类型，它不支持从单值到多值的改变，但它具有支持嵌套列表的优点。
+
+### 方案 3 - Avro
+
+Avro 是另一种二进制编码格式，适合 Hadoop 的用例。它有两种模式语言：一种（Avro IDL）用于人工编辑，另一种（基于 JSON）更易于机器读取。例如，下面的 Avro IDL
+
+```avro
+record Person {
+    string             userName;
+    union {null, long} favoriteNumber = null;
+    array<string>      interests;
+}
+```
+
+等价的 JSON 为
+
+```json
+{
+  "type": "record",
+  "name": "Person",
+  "fields": [
+    { "name": "userName", "type": "string" },
+    { "name": "favoriteNumber", "type": ["null", "long"], "default": "long" },
+    { "name": "userName", "type": "array", "items": "string" }
+  ]
+}
+```
+
+上面示例的字节编码如下图所示，可以看到，该模式中没有标签编号，是目前所有模式中最紧凑的
+
+![](/images/blog/ddia/chapter-4/avro.png)

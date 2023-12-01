@@ -1,7 +1,7 @@
 ---
 layout: post
 title: MongoDB Learning - 3
-categories: [Book, Learn]
+categories: [Book, MongoDB]
 description: Udemy Mongo 课程笔记
 keywords: MongoDB, Learn
 ---

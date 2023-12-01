@@ -1,7 +1,7 @@
 ---
 layout: post
 title: MongoDB Learning - 2
-categories: [Book, Learn]
+categories: [Book, MongoDB]
 description: MongoDB权威指南 - 学习笔记 - 2
 keywords: MongoDB, Learn
 ---

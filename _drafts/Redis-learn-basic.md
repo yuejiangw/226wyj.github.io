@@ -170,3 +170,24 @@ ping
 常用命令
 
 ![](/images/blog/redis/basic/SortedSet-type-command.png)
+
+## Redis 客户端
+
+### 客户端对比
+
+可以在该网站查看所有客户端：https://redis.io/docs/connect/clients/
+
+对于 Java，推荐 `Jedis`，`Lettuce`，`Redisson` 三种客户端
+
+![](/images/blog/redis/basic/java-client-compare.png)
+
+Spring Data Redis 同时兼容 Jedis 和 Lettuce
+
+### Jedis 快速入门
+
+基本使用步骤
+
+1. 引入依赖
+2. 创建 Jedis 对象，建立连接
+3. 使用 Jedis，方法名与 Redis 命令一致
+4. 释放资源

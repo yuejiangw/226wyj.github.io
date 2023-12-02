@@ -119,3 +119,54 @@ ping
 单 key 的 value 最大不能超过 512 MB
 
 ![](/images/blog/redis/basic/common_command.png)
+
+实际使用时，通常用冒号连接多个词来拼接 key，比如 `[项目名]:[业务名]:[类型]:id`，在某些 GUI 工具中，会自动根据冒号来划分层级，浏览更方便。这个格式也并非固定，可以根据自己的需求来删除或添加词条。
+
+如果 Value 是一个 Java 对象，例如一个 User 对象，则可以将对象序列化为 JSON 字符串后存储。
+
+### Hash 类型
+
+其 Value 是一个无序字典，类似于 Java 中的 HashMap 结构
+
+![](/images/blog/redis/basic/Hash-type.png)
+
+常用命令
+
+> 其实就是在 String 命令名的基础上增加了 H 首字母
+
+![](/images/blog/redis/basic/Hash-type-command.png)
+
+### List 类型
+
+理解为 Java 的 LinkedList 双向链表，特点是有序、元素可以重复、插入删除快、查找性能一般
+
+常用命令
+
+> 有点像操作一个双端队列
+
+![](/images/blog/redis/basic/List-type-command.png)
+
+### Set 类型
+
+与 Java 中的 HashSet 类似，可以看做是一个 value 为 null 的 HashMap，因为也是一个哈希表，因此具备与 HashSet 类似的特征：
+
+- 无序
+- 元素不可重复
+- 查找快
+- 支持交集、并集、差集等功能
+
+常用命令
+
+![](/images/blog/redis/basic/Set-type-command.png)
+
+### SortedSet 类型
+
+可排序集合，与 Java 中的 TreeSet 有些相似，但底层数据结构差别很大。SortedSet 中的每一个元素都带有一个 score 属性，可以基于 score 属性对元素排序，底层的实现是一个跳表（SkipList）加哈希表。SortedSet 具有如下特性：
+
+- 可排序
+- 元素不重复
+- 查询速度快
+
+常用命令
+
+![](/images/blog/redis/basic/SortedSet-type-command.png)

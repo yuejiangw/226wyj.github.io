@@ -185,9 +185,36 @@ Spring Data Redis 同时兼容 Jedis 和 Lettuce
 
 ### Jedis 快速入门
 
+[代码](https://github.com/226wyj/redis-learn/tree/main/jedis-demo)
+
 基本使用步骤
 
 1. 引入依赖
 2. 创建 Jedis 对象，建立连接
 3. 使用 Jedis，方法名与 Redis 命令一致
 4. 释放资源
+
+### SpringDataRedis
+
+[代码](https://github.com/226wyj/redis-learn/tree/main/springdata-redis-demo)
+
+![](/images/blog/redis/basic/spring-data-redis-intro.png)
+
+Spring Data 整合封装了一系列数据访问的操作，Spring Data Redis 则是封装了对 Jedis、Lettuce 这两个 Redis 客户端的操作，提供了统一的 RedisTemplate 来操作 Redis。
+
+RedisTemplate 针对不同的 Redis 数据结构提供了不同的 API，划分更明确
+
+![](/images/blog/redis/basic/redisTemplate.png)
+
+使用步骤
+
+1. 引入 spring-boot-starter-data-redis 依赖
+2. 在 application.yaml 配置 Redis 信息
+3. 注入 RedisTemplate
+
+**RedisTemplate 序列化**
+
+RedisTemplate 默认使用 JDK 原生序列化器，可读性差、内存占用大，因此可以用以下两种方式来改变序列化机制：
+
+1. 自定义 RedisTemplate，指定 key 和 value 的序列化器
+2. (推荐) 使用自带的 StringRedisTemplate, key 和 value 都默认使用 String 序列化器，仅支持写入 String 类型的 key 和 value，因此需要自己将对象序列化成 String 来写入 Redis，从 Redis 读取数据时也要手动反序列化

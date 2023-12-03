@@ -1,4 +1,231 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.3">Jekyll</generator><link href="https://226wyj.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://226wyj.github.io/" rel="alternate" type="text/html" /><updated>2023-12-02T20:40:28-08:00</updated><id>https://226wyj.github.io/feed.xml</id><title type="html">Wu</title><subtitle>My personal blog, used for recording my learning life.</subtitle><author><name>Wu, Yuejiang</name></author><entry><title type="html">MongoDB Learning - 3</title><link href="https://226wyj.github.io/2023/10/12/MongoDB-learn-3/" rel="alternate" type="text/html" title="MongoDB Learning - 3" /><published>2023-10-12T00:00:00-07:00</published><updated>2023-10-12T00:00:00-07:00</updated><id>https://226wyj.github.io/2023/10/12/MongoDB-learn-3</id><content type="html" xml:base="https://226wyj.github.io/2023/10/12/MongoDB-learn-3/">&lt;h2 id=&quot;nosql-中的-relationship&quot;&gt;NOSQL 中的 Relationship&lt;/h2&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.3">Jekyll</generator><link href="https://226wyj.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://226wyj.github.io/" rel="alternate" type="text/html" /><updated>2023-12-02T20:41:22-08:00</updated><id>https://226wyj.github.io/feed.xml</id><title type="html">Wu</title><subtitle>My personal blog, used for recording my learning life.</subtitle><author><name>Wu, Yuejiang</name></author><entry><title type="html">Redis 学习笔记 - 基础篇</title><link href="https://226wyj.github.io/2023/12/02/Redis-learn-basic/" rel="alternate" type="text/html" title="Redis 学习笔记 - 基础篇" /><published>2023-12-02T00:00:00-08:00</published><updated>2023-12-02T00:00:00-08:00</updated><id>https://226wyj.github.io/2023/12/02/Redis-learn-basic</id><content type="html" xml:base="https://226wyj.github.io/2023/12/02/Redis-learn-basic/">&lt;blockquote&gt;
+  &lt;p&gt;课程：https://www.bilibili.com/video/BV1cr4y1671t?&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;redis-介绍&quot;&gt;Redis 介绍&lt;/h2&gt;
+
+&lt;h3 id=&quot;是什么&quot;&gt;是什么？&lt;/h3&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;基于内存的 K / V 存储中间件&lt;/li&gt;
+  &lt;li&gt;NoSQL 键值对数据库&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;Redis 不仅仅是数据库，它还能作为消息队列等&lt;/p&gt;
+
+&lt;h3 id=&quot;sql-和-nosql-数据库对比&quot;&gt;SQL 和 NoSQL 数据库对比&lt;/h3&gt;
+
+&lt;p&gt;注意使用场景的差异&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/SQL%20vs%20NoSQL.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;redis-特征&quot;&gt;Redis 特征&lt;/h3&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;支持多种数据结构&lt;/li&gt;
+  &lt;li&gt;单线程，每个命令的执行具备原子性，中途不会执行其他命令（指命令的处理始终是单线程的，自 6.x 起改为多线程接受网络请求）&lt;/li&gt;
+  &lt;li&gt;高性能，低延时（基于内存，IO 多路复用，良好编码）&lt;/li&gt;
+  &lt;li&gt;支持数据持久化&lt;/li&gt;
+  &lt;li&gt;支持主从、分片集群&lt;/li&gt;
+  &lt;li&gt;支持多语言客户端&lt;/li&gt;
+  &lt;li&gt;默认 16 个数据库，不能配置名字，只能配置数量&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h2 id=&quot;redis-安装&quot;&gt;Redis 安装&lt;/h2&gt;
+
+&lt;p&gt;基于 Mac Homebrew 安装的命令为：&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;brew &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;redis
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;核心配置&lt;/p&gt;
+
+&lt;p&gt;配置文件的位置在 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;/opt/homebrew/etc/redis.conf&lt;/code&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# 允许任意 IP 访问&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;bind &lt;/span&gt;0.0.0.0
+
+&lt;span class=&quot;c&quot;&gt;# 后台启动 Redis 服务&lt;/span&gt;
+daemonize &lt;span class=&quot;nb&quot;&gt;yes&lt;/span&gt;
+
+&lt;span class=&quot;c&quot;&gt;# 密码设置&lt;/span&gt;
+requirepass xxx
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;启动 Redis 服务&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# 借助 Homebrew 启动 Redis 服务&lt;/span&gt;
+brew services start redis
+
+redis-server
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;查看 Redis 有没有成功启动&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;ps &lt;span class=&quot;nt&quot;&gt;-ef&lt;/span&gt; | &lt;span class=&quot;nb&quot;&gt;grep &lt;/span&gt;redis
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;关闭 Redis 服务&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;brew services stop redis
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;客户端连接-redis&quot;&gt;客户端连接 Redis&lt;/h3&gt;
+
+&lt;p&gt;通过命令行&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c&quot;&gt;# 1. 进入交互页面&lt;/span&gt;
+redis-cli
+
+&lt;span class=&quot;c&quot;&gt;# 2. 输入密码&lt;/span&gt;
+auth &amp;lt;password&amp;gt;
+
+&lt;span class=&quot;c&quot;&gt;# 3. 验证是否连接，如果成功连接会返回 PONG&lt;/span&gt;
+ping
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;常用命令&quot;&gt;常用命令&lt;/h3&gt;
+
+&lt;p&gt;命令集网站：http://www.redis.cn/commands.html&lt;/p&gt;
+
+&lt;p&gt;通用命令&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;set key value&lt;/li&gt;
+  &lt;li&gt;get key&lt;/li&gt;
+  &lt;li&gt;keys pattern 模糊搜索多个 key，性能差（尤其主节点），生产环境不建议用&lt;/li&gt;
+  &lt;li&gt;del key&lt;/li&gt;
+  &lt;li&gt;exists key 判断 key 是否存在&lt;/li&gt;
+  &lt;li&gt;expire key 设置过期时间，到期时候 ttl key 会返回 -2，同时该 key 会被删除&lt;/li&gt;
+  &lt;li&gt;ttl key 查询剩余存活时间，未设置过期时间则为 -1 代表永久有效&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;redis-基本数据结构&quot;&gt;Redis 基本数据结构&lt;/h2&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/type.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;string-类型&quot;&gt;String 类型&lt;/h3&gt;
+
+&lt;p&gt;支持存储字符串、数字、浮点数（实际存储都是字节数组）&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/string%20format.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;单 key 的 value 最大不能超过 512 MB&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/common_command.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;实际使用时，通常用冒号连接多个词来拼接 key，比如 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;[项目名]:[业务名]:[类型]:id&lt;/code&gt;，在某些 GUI 工具中，会自动根据冒号来划分层级，浏览更方便。这个格式也并非固定，可以根据自己的需求来删除或添加词条。&lt;/p&gt;
+
+&lt;p&gt;如果 Value 是一个 Java 对象，例如一个 User 对象，则可以将对象序列化为 JSON 字符串后存储。&lt;/p&gt;
+
+&lt;h3 id=&quot;hash-类型&quot;&gt;Hash 类型&lt;/h3&gt;
+
+&lt;p&gt;其 Value 是一个无序字典，类似于 Java 中的 HashMap 结构&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/Hash-type.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;常用命令&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;其实就是在 String 命令名的基础上增加了 H 首字母&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/Hash-type-command.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;list-类型&quot;&gt;List 类型&lt;/h3&gt;
+
+&lt;p&gt;理解为 Java 的 LinkedList 双向链表，特点是有序、元素可以重复、插入删除快、查找性能一般&lt;/p&gt;
+
+&lt;p&gt;常用命令&lt;/p&gt;
+
+&lt;blockquote&gt;
+  &lt;p&gt;有点像操作一个双端队列&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/List-type-command.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;set-类型&quot;&gt;Set 类型&lt;/h3&gt;
+
+&lt;p&gt;与 Java 中的 HashSet 类似，可以看做是一个 value 为 null 的 HashMap，因为也是一个哈希表，因此具备与 HashSet 类似的特征：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;无序&lt;/li&gt;
+  &lt;li&gt;元素不可重复&lt;/li&gt;
+  &lt;li&gt;查找快&lt;/li&gt;
+  &lt;li&gt;支持交集、并集、差集等功能&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;常用命令&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/Set-type-command.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h3 id=&quot;sortedset-类型&quot;&gt;SortedSet 类型&lt;/h3&gt;
+
+&lt;p&gt;可排序集合，与 Java 中的 TreeSet 有些相似，但底层数据结构差别很大。SortedSet 中的每一个元素都带有一个 score 属性，可以基于 score 属性对元素排序，底层的实现是一个跳表（SkipList）加哈希表。SortedSet 具有如下特性：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;可排序&lt;/li&gt;
+  &lt;li&gt;元素不重复&lt;/li&gt;
+  &lt;li&gt;查询速度快&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;常用命令&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/SortedSet-type-command.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;redis-客户端&quot;&gt;Redis 客户端&lt;/h2&gt;
+
+&lt;h3 id=&quot;客户端对比&quot;&gt;客户端对比&lt;/h3&gt;
+
+&lt;p&gt;可以在该网站查看所有客户端：https://redis.io/docs/connect/clients/&lt;/p&gt;
+
+&lt;p&gt;对于 Java，推荐 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Jedis&lt;/code&gt;，&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Lettuce&lt;/code&gt;，&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Redisson&lt;/code&gt; 三种客户端&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/java-client-compare.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Spring Data Redis 同时兼容 Jedis 和 Lettuce&lt;/p&gt;
+
+&lt;h3 id=&quot;jedis-快速入门&quot;&gt;Jedis 快速入门&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/226wyj/redis-learn/tree/main/jedis-demo&quot;&gt;代码&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;基本使用步骤&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;引入依赖&lt;/li&gt;
+  &lt;li&gt;创建 Jedis 对象，建立连接&lt;/li&gt;
+  &lt;li&gt;使用 Jedis，方法名与 Redis 命令一致&lt;/li&gt;
+  &lt;li&gt;释放资源&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;h3 id=&quot;springdataredis&quot;&gt;SpringDataRedis&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/226wyj/redis-learn/tree/main/springdata-redis-demo&quot;&gt;代码&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/spring-data-redis-intro.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Spring Data 整合封装了一系列数据访问的操作，Spring Data Redis 则是封装了对 Jedis、Lettuce 这两个 Redis 客户端的操作，提供了统一的 RedisTemplate 来操作 Redis。&lt;/p&gt;
+
+&lt;p&gt;RedisTemplate 针对不同的 Redis 数据结构提供了不同的 API，划分更明确&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/redis/basic/redisTemplate.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;使用步骤&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;引入 spring-boot-starter-data-redis 依赖&lt;/li&gt;
+  &lt;li&gt;在 application.yaml 配置 Redis 信息&lt;/li&gt;
+  &lt;li&gt;注入 RedisTemplate&lt;/li&gt;
+&lt;/ol&gt;
+
+&lt;p&gt;&lt;strong&gt;RedisTemplate 序列化&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;RedisTemplate 默认使用 JDK 原生序列化器，可读性差、内存占用大，因此可以用以下两种方式来改变序列化机制：&lt;/p&gt;
+
+&lt;ol&gt;
+  &lt;li&gt;自定义 RedisTemplate，指定 key 和 value 的序列化器&lt;/li&gt;
+  &lt;li&gt;(推荐) 使用自带的 StringRedisTemplate, key 和 value 都默认使用 String 序列化器，仅支持写入 String 类型的 key 和 value，因此需要自己将对象序列化成 String 来写入 Redis，从 Redis 读取数据时也要手动反序列化&lt;/li&gt;
+&lt;/ol&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Learn" /><summary type="html">课程：https://www.bilibili.com/video/BV1cr4y1671t?</summary></entry><entry><title type="html">MongoDB Learning - 3</title><link href="https://226wyj.github.io/2023/10/12/MongoDB-learn-3/" rel="alternate" type="text/html" title="MongoDB Learning - 3" /><published>2023-10-12T00:00:00-07:00</published><updated>2023-10-12T00:00:00-07:00</updated><id>https://226wyj.github.io/2023/10/12/MongoDB-learn-3</id><content type="html" xml:base="https://226wyj.github.io/2023/10/12/MongoDB-learn-3/">&lt;h2 id=&quot;nosql-中的-relationship&quot;&gt;NOSQL 中的 Relationship&lt;/h2&gt;
 
 &lt;h3 id=&quot;一对一关系&quot;&gt;一对一关系&lt;/h3&gt;
 
@@ -971,57 +1198,4 @@ Output: 23
                 &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
         &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;num_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Leetcode" /><summary type="html">This article will introduce a tempelate solution for solving Basic Calculator problems. Using the following method, you are able to conquer the following three problems:</summary></entry><entry><title type="html">Leetcode 654. Maximum Binary Tree</title><link href="https://226wyj.github.io/2021/12/26/Leetcode-654/" rel="alternate" type="text/html" title="Leetcode 654. Maximum Binary Tree" /><published>2021-12-26T00:00:00-08:00</published><updated>2021-12-26T00:00:00-08:00</updated><id>https://226wyj.github.io/2021/12/26/Leetcode-654</id><content type="html" xml:base="https://226wyj.github.io/2021/12/26/Leetcode-654/">&lt;p&gt;&lt;a href=&quot;https://leetcode.com/problems/maximum-binary-tree/&quot;&gt;Original Leetcode Problem Link&lt;/a&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;problem-description&quot;&gt;Problem Description&lt;/h2&gt;
-
-&lt;p&gt;You are given an integer array nums with no duplicates. A maximum binary tree can be built recursively from nums using the following algorithm:&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Create a root node whose value is the maximum value in nums.&lt;/li&gt;
-  &lt;li&gt;Recursively build the left subtree on the subarray prefix to the left of the maximum value.&lt;/li&gt;
-  &lt;li&gt;Recursively build the right subtree on the subarray suffix to the right of the maximum value.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Return the maximum binary tree built from nums.&lt;/p&gt;
-
-&lt;h2 id=&quot;example&quot;&gt;Example&lt;/h2&gt;
-
-&lt;p&gt;&lt;img src=&quot;/images/leetcode/654.jpeg&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;div class=&quot;language-text highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Input: nums = [3,2,1,6,0,5]
-Output: [6,3,5,null,2,0,null,null,1]
-Explanation: The recursive calls are as follow:
-- The largest value in [3,2,1,6,0,5] is 6. Left prefix is [3,2,1] and right suffix is [0,5].
-    - The largest value in [3,2,1] is 3. Left prefix is [] and right suffix is [2,1].
-        - Empty array, so no child.
-        - The largest value in [2,1] is 2. Left prefix is [] and right suffix is [1].
-            - Empty array, so no child.
-            - Only one element, so child is a node with value 1.
-    - The largest value in [0,5] is 5. Left prefix is [0] and right suffix is [].
-        - Only one element, so child is a node with value 0.
-        - Empty array, so no child.
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;solution&quot;&gt;Solution&lt;/h2&gt;
-
-&lt;p&gt;We should use preorder traversal to build the tree. As for the recursion function, the parameter should be the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nums&lt;/code&gt; array, and the return type should be &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;TreeNode&lt;/code&gt;. When there is no element in the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nums&lt;/code&gt; array, the recursion should stop and return &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;None&lt;/code&gt;. For each round, we should choose the maximum value as the root value, and divide the &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;nums&lt;/code&gt; array into two parts by the index of the root value, then build the left subtree and right subtree recursively.&lt;/p&gt;
-
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;# Definition for a binary tree node.
-# class TreeNode:
-#     def __init__(self, val=0, left=None, right=None):
-#         self.val = val
-#         self.left = left
-#         self.right = right
-&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Solution&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;constructMaximumBinaryTree&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;List&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TreeNode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;construct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;root_val&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;max&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;root_idx&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;index&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;root_val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TreeNode&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;root_val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;left&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;construct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[:&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;root_idx&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;right&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;construct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;root_idx&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;+&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:])&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;root&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;construct&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nums&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Leetcode" /><summary type="html">Original Leetcode Problem Link</summary></entry></feed>
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Leetcode" /><summary type="html">This article will introduce a tempelate solution for solving Basic Calculator problems. Using the following method, you are able to conquer the following three problems:</summary></entry></feed>

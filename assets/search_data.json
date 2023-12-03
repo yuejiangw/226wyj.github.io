@@ -78,6 +78,8 @@
   
   
   
+  
+  
 
   
     {
@@ -158,6 +160,14 @@
       
       "url"      : "https://226wyj.github.io/2023/10/12/MongoDB-learn-3/",
       "keywords" : "MongoDB, Learn"
+    } ,
+  
+    {
+      "title"    : "Redis 学习笔记 - 基础篇",
+      "category" : "Learn",
+      
+      "url"      : "https://226wyj.github.io/2023/12/02/Redis-learn-basic/",
+      "keywords" : "Redis, Learn"
     } ,
   
     {

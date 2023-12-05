@@ -8,7 +8,9 @@ keywords: Redis, Learn
 
 > 课程链接：[bilibili](https://www.bilibili.com/video/BV1cr4y1671t?)
 
-项目 - 黑马点评
+# 项目 - 黑马点评
+
+> 项目地址：[Github](https://github.com/226wyj/redis-learn/tree/main/hm-dianping)
 
 ![](/images/blog/redis/action/intro.png)
 

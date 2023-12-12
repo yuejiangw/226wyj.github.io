@@ -183,3 +183,7 @@ Cache Aside 是最常用的方式
 两种方式都使用了互斥锁来降低缓存重建的开销，方案优缺点对比如下：
 
 ![](/images/blog/redis/action/cache/solution-compare.png)
+
+可以将上述两种方式封装成一个缓存工具类：
+
+![](/images/blog/redis/action/cache/cache-tool.png)

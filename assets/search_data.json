@@ -124,7 +124,7 @@
   
     {
       "title"    : "MongoDB Learning - 1",
-      "category" : "Book",
+      "category" : "Learn",
       
       "url"      : "https://226wyj.github.io/2023/06/10/MongoDB-learn-1/",
       "keywords" : "MongoDB, Learn"
@@ -132,7 +132,7 @@
   
     {
       "title"    : "MongoDB Learning - 2",
-      "category" : "Book",
+      "category" : "Learn",
       
       "url"      : "https://226wyj.github.io/2023/06/11/MongoDB-learn-2/",
       "keywords" : "MongoDB, Learn"
@@ -148,7 +148,7 @@
   
     {
       "title"    : "DDIA Learning - 3",
-      "category" : "Book",
+      "category" : "Learn",
       
       "url"      : "https://226wyj.github.io/2023/08/27/DDIA-learn-3/",
       "keywords" : "Architecture, Learn"
@@ -156,7 +156,7 @@
   
     {
       "title"    : "MongoDB Learning - 3",
-      "category" : "Book",
+      "category" : "Learn",
       
       "url"      : "https://226wyj.github.io/2023/10/12/MongoDB-learn-3/",
       "keywords" : "MongoDB, Learn"

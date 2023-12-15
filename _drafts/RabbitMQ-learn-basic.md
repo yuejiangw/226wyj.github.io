@@ -95,13 +95,29 @@ exchange 绑定 queue
 
 ![](/images/blog/rabbitmq/basic/exchange-bind.png)
 
-publish message
+Publish message
 
 ![](/images/blog/rabbitmq/basic/publish-message.png)
 
+Get message
+
+![](/images/blog/rabbitmq/basic/get-message.png)
+
 ## 数据隔离
 
+添加用户
 
+![](/images/blog/rabbitmq/basic/add-user.png)
+
+这里我们添加了一个名为 `hmall` 的管理员账户，尽管它可以看到我们在上一步骤中创建的 `hello.queue1` 和 `hello.queue2` 两个队列，但它却无权访问（get message 会出错）。这是因为上面两个队列是在不同的 virtual host 中创建的，可见 RabbitMQ 通过 Virtual Host 实现了数据隔离。
+
+创建虚拟主机（Virtual host）
+
+![](/images/blog/rabbitmq/basic/add-virtual-host.png)
+
+添加了新的 virtual host 之后我们再次查看 exchanges 页面，会发现这次会多出我们 virtual host 下的 exchange
+
+![](/images/blog/rabbitmq/basic/all-exchange.png)
 
 ## SpringAMQP
 

@@ -53,7 +53,55 @@ keywords: RabbitMQ, Learn
 - RabbitMQ：可靠性高，语言不限于 Java，消息延迟低
 - RocketMQ：可靠性高，Java 项目
 
+## 认识和安装
+
+### 安装
+
+在 Mac 环境下通过 Homebrew 安装
+
+```shell
+brew install rabbitmq
+```
+
+启动服务，默认端口是 15672
+
+```shell
+brew services start rabbitmq
+```
+
+访问管理页面
+
+- url: http://localhost:15672
+- username: guest
+- password: guest
+
+### 基本介绍
+
+**发送模型**
+
+publisher 生产者发消息给 exchange (交换机)，exchange 负责将消息路由给 queue (队列)，consumer (消费者) 监听队列从而拿到消息
+
+![](/images/blog/rabbitmq/basic/basic-concept.png)
+
+交换机是负责路由和转发消息的，它本身没有存储消息的能力
+
+**快速入门**
+
+创建一个新的 queue
+
+![](/images/blog/rabbitmq/basic/create-queue.png)
+
+exchange 绑定 queue
+
+![](/images/blog/rabbitmq/basic/exchange-bind.png)
+
+publish message
+
+![](/images/blog/rabbitmq/basic/publish-message.png)
+
 ## 数据隔离
+
+
 
 ## SpringAMQP
 

@@ -171,6 +171,14 @@
     } ,
   
     {
+      "title"    : "RabbitMQ 学习笔记 - 基础篇",
+      "category" : "Learn",
+      
+      "url"      : "https://226wyj.github.io/2023/12/19/RabbitMQ-learn-basic/",
+      "keywords" : "RabbitMQ, Learn"
+    } ,
+  
+    {
       "title"    : "中文文案排版指北（简体中文版）",
       "category" : "Copywriting",
       

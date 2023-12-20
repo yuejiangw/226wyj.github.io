@@ -1,4 +1,220 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.3">Jekyll</generator><link href="https://226wyj.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://226wyj.github.io/" rel="alternate" type="text/html" /><updated>2023-12-15T00:13:20-08:00</updated><id>https://226wyj.github.io/feed.xml</id><title type="html">Wu</title><subtitle>My personal blog, used for recording my learning life.</subtitle><author><name>Wu, Yuejiang</name></author><entry><title type="html">Redis 学习笔记 - 基础篇</title><link href="https://226wyj.github.io/2023/12/02/Redis-learn-basic/" rel="alternate" type="text/html" title="Redis 学习笔记 - 基础篇" /><published>2023-12-02T00:00:00-08:00</published><updated>2023-12-02T00:00:00-08:00</updated><id>https://226wyj.github.io/2023/12/02/Redis-learn-basic</id><content type="html" xml:base="https://226wyj.github.io/2023/12/02/Redis-learn-basic/">&lt;blockquote&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.3">Jekyll</generator><link href="https://226wyj.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://226wyj.github.io/" rel="alternate" type="text/html" /><updated>2023-12-19T19:48:18-08:00</updated><id>https://226wyj.github.io/feed.xml</id><title type="html">Wu</title><subtitle>My personal blog, used for recording my learning life.</subtitle><author><name>Wu, Yuejiang</name></author><entry><title type="html">RabbitMQ 学习笔记 - 基础篇</title><link href="https://226wyj.github.io/2023/12/19/RabbitMQ-learn-basic/" rel="alternate" type="text/html" title="RabbitMQ 学习笔记 - 基础篇" /><published>2023-12-19T00:00:00-08:00</published><updated>2023-12-19T00:00:00-08:00</updated><id>https://226wyj.github.io/2023/12/19/RabbitMQ-learn-basic</id><content type="html" xml:base="https://226wyj.github.io/2023/12/19/RabbitMQ-learn-basic/">&lt;blockquote&gt;
+  &lt;p&gt;课程链接：&lt;a href=&quot;https://www.bilibili.com/video/BV1mN4y1Z7t9/?vd_source=734a4a3d12292363fc3078169ddd7db2&quot;&gt;bilibili&lt;/a&gt;&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;同步和异步&quot;&gt;同步和异步&lt;/h2&gt;
+
+&lt;h3 id=&quot;同步调用&quot;&gt;同步调用&lt;/h3&gt;
+
+&lt;p&gt;优势：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;时效性强，等待到结果后才返回&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;问题：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;拓展性差：各个服务耦合度高，不易拓展&lt;/li&gt;
+  &lt;li&gt;性能下降：多个服务需要依次等待上一个服务执行完毕才可以开始运行，性能低&lt;/li&gt;
+  &lt;li&gt;级联失败：如果中间有某一个服务宕机的话则后续的所有服务都无法继续运行，并且该停机可能会传播到上级服务中，引发全线崩溃&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;异步调用&quot;&gt;异步调用&lt;/h3&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/async.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/async-architecture.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;异步调用的优势和劣势与同步调用刚好是反过来的&lt;/p&gt;
+
+&lt;p&gt;优势：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;耦合度低，拓展性强&lt;/li&gt;
+  &lt;li&gt;异步调用，无需等待，性能好&lt;/li&gt;
+  &lt;li&gt;故障隔离，下游服务故障不影响上游业务&lt;/li&gt;
+  &lt;li&gt;缓存消息，流量削峰填谷&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;劣势：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;不能立即得到调用结果，时效性差&lt;/li&gt;
+  &lt;li&gt;不确定下游业务是否执行成功&lt;/li&gt;
+  &lt;li&gt;业务安全依赖于 Broker （消息代理）的可靠性&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;mq-技术选型&quot;&gt;MQ 技术选型&lt;/h2&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/selection.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;使用场景：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Kafka：吞吐量很高的情况，比如日志收集&lt;/li&gt;
+  &lt;li&gt;RabbitMQ：可靠性高，语言不限于 Java，消息延迟低&lt;/li&gt;
+  &lt;li&gt;RocketMQ：可靠性高，Java 项目&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;认识和安装&quot;&gt;认识和安装&lt;/h2&gt;
+
+&lt;h3 id=&quot;安装&quot;&gt;安装&lt;/h3&gt;
+
+&lt;p&gt;在 Mac 环境下通过 Homebrew 安装&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;brew &lt;span class=&quot;nb&quot;&gt;install &lt;/span&gt;rabbitmq
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;启动服务，默认端口是 15672&lt;/p&gt;
+
+&lt;div class=&quot;language-shell highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;brew services start rabbitmq
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;访问管理页面&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;url: http://localhost:15672&lt;/li&gt;
+  &lt;li&gt;username: guest&lt;/li&gt;
+  &lt;li&gt;password: guest&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;基本介绍&quot;&gt;基本介绍&lt;/h3&gt;
+
+&lt;p&gt;&lt;strong&gt;发送模型&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;publisher 生产者发消息给 exchange (交换机)，exchange 负责将消息路由给 queue (队列)，consumer (消费者) 监听队列从而拿到消息&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/basic-concept.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;交换机是负责路由和转发消息的，它本身没有存储消息的能力&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;快速入门&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;创建一个新的 queue&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/create-queue.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;exchange 绑定 queue&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/exchange-bind.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Publish message&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/publish-message.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Get message&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/get-message.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;数据隔离&quot;&gt;数据隔离&lt;/h2&gt;
+
+&lt;p&gt;添加用户&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/add-user.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;这里我们添加了一个名为 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;hmall&lt;/code&gt; 的管理员账户，尽管它可以看到我们在上一步骤中创建的 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;hello.queue1&lt;/code&gt; 和 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;hello.queue2&lt;/code&gt; 两个队列，但它却无权访问（get message 会出错）。这是因为上面两个队列是在不同的 virtual host 中创建的，可见 RabbitMQ 通过 Virtual Host 实现了数据隔离。&lt;/p&gt;
+
+&lt;p&gt;创建虚拟主机（Virtual host）&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/add-virtual-host.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;添加了新的 virtual host 之后我们再次查看 exchanges 页面，会发现这次会多出我们 virtual host 下的 exchange&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/all-exchange.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;work模式&quot;&gt;work模式&lt;/h2&gt;
+
+&lt;p&gt;一个队列上绑定多个消费者的模式叫 work 模式，这样做的目的是为了增加处理能力，避免消息堆积&lt;/p&gt;
+
+&lt;p&gt;默认情况下，&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RabbitMQ&lt;/code&gt; 会将消息依次轮询投递给绑定在队列上的每一个消费者，但这并没有考虑到不同消费者的消费能力的区别，可能会导致消息堆积&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;解决方案：&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;修改 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;application.yml&lt;/code&gt;，设置 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;preFetch&lt;/code&gt; 值为 1， 确保同一时刻最多投递给消费者 1 条消息，实现能者多劳&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/preFetch.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;交换机&quot;&gt;交换机&lt;/h2&gt;
+
+&lt;p&gt;交换机的作用是：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;接收 publisher 发送的消息&lt;/li&gt;
+  &lt;li&gt;将消息按照规则路由到与之绑定的队列&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;交换机类型&quot;&gt;交换机类型&lt;/h3&gt;
+
+&lt;h4 id=&quot;fanout广播&quot;&gt;Fanout：广播&lt;/h4&gt;
+
+&lt;p&gt;Fanout Exchange 会将接收到的消息广播到每一个跟其绑定的 queue，所以也叫广播模式&lt;/p&gt;
+
+&lt;h4 id=&quot;direct定向&quot;&gt;Direct：定向&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/direct-exchange.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;topic话题&quot;&gt;Topic：话题&lt;/h4&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/topic-exchange.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;Topic 交换机是最灵活的一种交换机，可以模拟 Direct 和 Fanout，并且可以使用通配符，如果不确定要使用哪种 exchange 则推荐使用 Topic&lt;/p&gt;
+
+&lt;p&gt;Direct 交换机与 Topic 交换机的差异&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;Topic 交换机中 routing key 可以是多个单词，以 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;.&lt;/code&gt; 分割&lt;/li&gt;
+  &lt;li&gt;Topic 交换机与队列绑定时的 binding key 可以指定通配符&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;#&lt;/code&gt; 代表 0 个或多个词&lt;/li&gt;
+  &lt;li&gt;&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;*&lt;/code&gt; 代表 1 个词&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;springamqp&quot;&gt;SpringAMQP&lt;/h2&gt;
+
+&lt;h4 id=&quot;amqp--spring-amqp&quot;&gt;AMQP &amp;amp; Spring AMQP&lt;/h4&gt;
+
+&lt;p&gt;&lt;strong&gt;AMQP&lt;/strong&gt;：Advanced Message Queuing Protocol, 用来在应用程序之间传递业务消息的开放标准，该协议与平台语言无关&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;Spring AMQP&lt;/strong&gt;：基于 AMQP 协议定义的一套 API 规范，提供了模板来发送和接收消息，包含两部分，其中 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spring-amqp&lt;/code&gt; 是基础抽象，&lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spring-rabbit&lt;/code&gt; 是底层的默认实现&lt;/p&gt;
+
+&lt;h4 id=&quot;快速入门&quot;&gt;快速入门&lt;/h4&gt;
+
+&lt;p&gt;项目地址：&lt;a href=&quot;https://github.com/226wyj/rabbitmq-learn/tree/main/mq-demo&quot;&gt;Github&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;使用步骤：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;引入 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;spring-boot-starter-amqp&lt;/code&gt; 依赖&lt;/li&gt;
+  &lt;li&gt;配置 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;rabbitmq&lt;/code&gt; 服务端信息&lt;/li&gt;
+  &lt;li&gt;利用 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;RabbitTemplate&lt;/code&gt; 发送消息&lt;/li&gt;
+  &lt;li&gt;利用 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@RabbitListener&lt;/code&gt; 注解声明要监听的队列，监听消息&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;注意：对于 RabbitMQ，控制台页面的端口是 15672，但正常队列的端口是 5672&lt;/p&gt;
+
+&lt;h4 id=&quot;通过-springamqp-配置-rabbitmq&quot;&gt;通过 SpringAMQP 配置 RabbitMQ&lt;/h4&gt;
+
+&lt;p&gt;常用类：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/queue+exchange.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;基于 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Configuration&lt;/code&gt; 注解和 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Bean&lt;/code&gt; 注解声明和配置 Exchange，以 Fanout 为例：&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/exchange-sample.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;推荐使用基于 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@RabbitListener&lt;/code&gt; 注解的方式来进行配置而不是使用 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;@Bean&lt;/code&gt; 进行依赖注入，后者在配置 Direct Exchange 的时候对于每个 Bean 每次只能指定一个 key，如果一个 Queue 要是想绑定多个 key 的话就要声明多个 Bean，比较麻烦&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/annotation-based-exchange-config.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;mq消息转换器&quot;&gt;MQ消息转换器&lt;/h2&gt;
+
+&lt;p&gt;Spring 中默认使用 JDK 自带的 ObjectOutputStream 进行序列化，因此如果我们想给 MQ 发送一个 Object，则会被 convert 成一个字节码序列&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/default-converter.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
+
+&lt;p&gt;解决：使用 JSON 序列化替代默认的 JDK 序列化&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/blog/rabbitmq/basic/json-converter.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Learn" /><summary type="html">课程链接：bilibili</summary></entry><entry><title type="html">Redis 学习笔记 - 基础篇</title><link href="https://226wyj.github.io/2023/12/02/Redis-learn-basic/" rel="alternate" type="text/html" title="Redis 学习笔记 - 基础篇" /><published>2023-12-02T00:00:00-08:00</published><updated>2023-12-02T00:00:00-08:00</updated><id>https://226wyj.github.io/2023/12/02/Redis-learn-basic</id><content type="html" xml:base="https://226wyj.github.io/2023/12/02/Redis-learn-basic/">&lt;blockquote&gt;
   &lt;p&gt;课程链接：&lt;a href=&quot;https://www.bilibili.com/video/BV1cr4y1671t?&quot;&gt;blibili&lt;/a&gt;&lt;/p&gt;
 &lt;/blockquote&gt;
 
@@ -1099,113 +1315,4 @@ class Node:
             &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;
 
         &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;new_head&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Leetcode" /><summary type="html">Problem Link</summary></entry><entry><title type="html">Leetcode 224. Basic Calculator</title><link href="https://226wyj.github.io/2021/12/27/Leetcode-224/" rel="alternate" type="text/html" title="Leetcode 224. Basic Calculator" /><published>2021-12-27T00:00:00-08:00</published><updated>2021-12-27T00:00:00-08:00</updated><id>https://226wyj.github.io/2021/12/27/Leetcode-224</id><content type="html" xml:base="https://226wyj.github.io/2021/12/27/Leetcode-224/">&lt;p&gt;This article will introduce a tempelate solution for solving &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Basic Calculator&lt;/code&gt; problems. Using the following method, you are able to conquer the following three problems:&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://leetcode.com/problems/basic-calculator/&quot;&gt;224. Basic Calculator&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://leetcode.com/problems/basic-calculator-ii/&quot;&gt;227. Basic Calculator II&lt;/a&gt;&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://leetcode.com/problems/basic-calculator-iii/&quot;&gt;772. Basic Calculator III&lt;/a&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;problem-description&quot;&gt;Problem Description&lt;/h2&gt;
-
-&lt;p&gt;Given a string s representing a valid expression, implement a basic calculator to evaluate it, and return the result of the evaluation.&lt;/p&gt;
-
-&lt;p&gt;Note: You are not allowed to use any built-in function which evaluates strings as mathematical expressions, such as eval().&lt;/p&gt;
-
-&lt;h2 id=&quot;example&quot;&gt;Example&lt;/h2&gt;
-
-&lt;p&gt;&lt;strong&gt;Example 1:&lt;/strong&gt;&lt;/p&gt;
-
-&lt;div class=&quot;language-text highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Input: s = &quot;1 + 1&quot;
-Output: 2
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;strong&gt;Example 2:&lt;/strong&gt;&lt;/p&gt;
-
-&lt;div class=&quot;language-text highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Input: s = &quot; 2-1 + 2 &quot;
-Output: 3
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;strong&gt;Example 3:&lt;/strong&gt;&lt;/p&gt;
-
-&lt;div class=&quot;language-text highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Input: s = &quot;(1+(4+5+2)-3)+(6+8)&quot;
-Output: 23
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;solution&quot;&gt;Solution&lt;/h2&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Use two stacks, one for storing the operands, and the other for storing the operators.&lt;/li&gt;
-  &lt;li&gt;For each operator, use a hash map to mark the priority relations among them. The operator with higher priority will have a larger value, and two operators with the same priority will have the same value.&lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;The original expression may have spaces, parenthesis, and negative numbers in it, so to make it a normal format, we would carry the following steps:&lt;/p&gt;
-
-    &lt;ul&gt;
-      &lt;li&gt;Add a pair of parenthesis at the outermost of the expression.&lt;/li&gt;
-      &lt;li&gt;Delete all the spaces in the expression.&lt;/li&gt;
-      &lt;li&gt;Replace the string in the format of ‘(-‘ into ‘(0-‘, so that we won’t need to pay attention to the operations among negative numbers.&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;
-    &lt;p&gt;For each character in the expression string, there may be the following possibilities:&lt;/p&gt;
-
-    &lt;ul&gt;
-      &lt;li&gt;If the character is a digit, then find all the continuous digits, convert them into an integer, and push the integer into the operand stack.&lt;/li&gt;
-      &lt;li&gt;If the character is a left parenthesis, then push it into the operator stack.&lt;/li&gt;
-      &lt;li&gt;If the character is a right parenthesis, then compute the sub-expression’s value based on current state of the two stacks until find the left parenthesis in the operator stack. Then pop the left parenthesis and push the computed value into the operand stack, which means we have finished computing the value of the sub-expression between the pair of parenthesis.&lt;/li&gt;
-      &lt;li&gt;If the character is an arithmetic operator, then before pushing it into the operator stack, we should compute the current sub-expression until we meet an operator in the operator stack whose priority is smaller than the current character.&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/li&gt;
-  &lt;li&gt;After iterating and processing all the characters in the expression string, there should be only one number left in the operand stack, return it.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Solution&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;compute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;num_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;):&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;num_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;or&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;num_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(),&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;num_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;op&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;res&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;+&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;res&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;elif&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;-&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;res&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;x&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;y&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;num_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;res&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-    &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;calculate&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;str&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;op_prio&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos;+&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;-&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;(&apos;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;replace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&apos; &apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;)&apos;&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;replace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;(-&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;(0-&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;num_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[],&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;len&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
-
-            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isdigit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;num&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;n&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;and&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;isdigit&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;():&lt;/span&gt;
-                    &lt;span class=&quot;n&quot;&gt;num&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;num&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;10&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;int&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;s&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;])&lt;/span&gt;
-                    &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;num_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;num&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-            &lt;span class=&quot;k&quot;&gt;elif&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;(&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-
-            &lt;span class=&quot;k&quot;&gt;elif&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;c&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;)&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;and&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;(&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                    &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;compute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;num_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pop&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt;
-
-            &lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;and&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;(&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                    &lt;span class=&quot;n&quot;&gt;pre_op&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-                    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_prio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pre_op&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_prio&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]:&lt;/span&gt;
-                        &lt;span class=&quot;k&quot;&gt;break&lt;/span&gt;
-                    &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;compute&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;num_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;op_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;append&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;c&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;num_stack&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Leetcode" /><summary type="html">This article will introduce a tempelate solution for solving Basic Calculator problems. Using the following method, you are able to conquer the following three problems:</summary></entry></feed>
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Leetcode" /><summary type="html">Problem Link</summary></entry></feed>

@@ -1,13 +1,13 @@
 ---
 layout: post
-title: RabbitMQ 学习笔记 - 基础篇
+title: RabbitMQ 学习笔记 - 高级篇
 categories: [Learn]
 description: 黑马程序员 RabbitMQ 教程学习笔记
 keywords: RabbitMQ, Learn
 ---
 
 > 课程链接：[bilibili](https://www.bilibili.com/video/BV1mN4y1Z7t9/?vd_source=734a4a3d12292363fc3078169ddd7db2)
-> P1 - P15
+> P16 - P31
 
 ## 同步和异步
 

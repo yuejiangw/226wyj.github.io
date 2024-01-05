@@ -1,4 +1,183 @@
-<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.3">Jekyll</generator><link href="https://226wyj.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://226wyj.github.io/" rel="alternate" type="text/html" /><updated>2024-01-04T16:36:29-08:00</updated><id>https://226wyj.github.io/feed.xml</id><title type="html">Wu</title><subtitle>My personal blog, used for recording my learning life.</subtitle><author><name>Wu, Yuejiang</name></author><entry><title type="html">RabbitMQ 学习笔记 - 基础篇</title><link href="https://226wyj.github.io/2023/12/19/RabbitMQ-learn-basic/" rel="alternate" type="text/html" title="RabbitMQ 学习笔记 - 基础篇" /><published>2023-12-19T00:00:00-08:00</published><updated>2023-12-19T00:00:00-08:00</updated><id>https://226wyj.github.io/2023/12/19/RabbitMQ-learn-basic</id><content type="html" xml:base="https://226wyj.github.io/2023/12/19/RabbitMQ-learn-basic/">&lt;blockquote&gt;
+<?xml version="1.0" encoding="utf-8"?><feed xmlns="http://www.w3.org/2005/Atom" ><generator uri="https://jekyllrb.com/" version="3.9.3">Jekyll</generator><link href="https://226wyj.github.io/feed.xml" rel="self" type="application/atom+xml" /><link href="https://226wyj.github.io/" rel="alternate" type="text/html" /><updated>2024-01-04T22:10:33-08:00</updated><id>https://226wyj.github.io/feed.xml</id><title type="html">Wu</title><subtitle>My personal blog, used for recording my learning life.</subtitle><author><name>Wu, Yuejiang</name></author><entry><title type="html">RabbitMQ 学习笔记 - 高级篇</title><link href="https://226wyj.github.io/2024/01/04/RabbitMQ-learn-advance/" rel="alternate" type="text/html" title="RabbitMQ 学习笔记 - 高级篇" /><published>2024-01-04T00:00:00-08:00</published><updated>2024-01-04T00:00:00-08:00</updated><id>https://226wyj.github.io/2024/01/04/RabbitMQ-learn-advance</id><content type="html" xml:base="https://226wyj.github.io/2024/01/04/RabbitMQ-learn-advance/">&lt;blockquote&gt;
+  &lt;p&gt;课程链接：&lt;a href=&quot;https://www.bilibili.com/video/BV1mN4y1Z7t9/?vd_source=734a4a3d12292363fc3078169ddd7db2&quot;&gt;bilibili&lt;/a&gt;
+P16 - P31&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;发送者的可靠性&quot;&gt;发送者的可靠性&lt;/h2&gt;
+
+&lt;p&gt;&lt;strong&gt;生产者重连&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;/images/blog/rabbitmq/advance/producer-retry.png&quot;&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;strong&gt;生产者确认&lt;/strong&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;/images/blog/rabbitmq/advance/producer-confirm.png&quot;&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;如何处理生产者的确认消息？&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;尽管有四种情况，但我们真正需要处理的只有 NACK 这一种，即消息 publish 失败&lt;/li&gt;
+  &lt;li&gt;生产者确认需要额外的网络和系统资源开销，尽量不要使用，如果一定要使用则无需开启 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Publisher-Return&lt;/code&gt; 机制，只开启 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;Publisher-Confirm&lt;/code&gt; 即可，因为一般路由失败是代码问题&lt;/li&gt;
+  &lt;li&gt;对于 nack 消息可以有限次数重试，依然失败则记录异常信息&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h2 id=&quot;mq-的可靠性&quot;&gt;MQ 的可靠性&lt;/h2&gt;
+
+&lt;p&gt;默认情况下 RabbitMQ 会把消息存放在内存中，尽管效率高但会有两个问题：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;一旦 MQ 宕机，内存中的消息会消失&lt;/li&gt;
+  &lt;li&gt;内存空间有限，当消费者故障或处理过慢时，会导致消息积压，引发 MQ 阻塞&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;数据持久化&quot;&gt;数据持久化&lt;/h3&gt;
+
+&lt;p&gt;可以通过配置让交换机、队列、以及发送的消息都持久化，这样队列中的消息会持久化到磁盘，MQ 重启消息依然存在&lt;/p&gt;
+
+&lt;h3 id=&quot;lazy-queue&quot;&gt;Lazy Queue&lt;/h3&gt;
+
+&lt;p&gt;惰性队列，接收到消息后直接存入磁盘而非内存（内存中只保留最近消息，默认 2048 条），消费者要消费消息时才会从磁盘中读取加载到内存，可以支持数百万条的消息存储&lt;/p&gt;
+
+&lt;p&gt;要设置一个队列为 Lazy Queue，只需要在声明队列时指定 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;x-queue-mode&lt;/code&gt; 为 lazy 即可&lt;/p&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;c1&quot;&gt;// 直接创建 Queue 对象&lt;/span&gt;
+&lt;span class=&quot;nd&quot;&gt;@Bean&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Queue&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;lazyQueue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+   &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;QueueBuilder&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;durable&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;lazy.queue&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;lazy&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 开启 lazy 模式&lt;/span&gt;
+            &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;build&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+
+&lt;span class=&quot;c1&quot;&gt;// 基于 @RabbitListener 注解创建 Queue&lt;/span&gt;
+&lt;span class=&quot;nd&quot;&gt;@RabbitListener&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;queuesToDeclare&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nd&quot;&gt;@Queue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;
+   &lt;span class=&quot;n&quot;&gt;name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;lazy.queue&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;
+   &lt;span class=&quot;n&quot;&gt;durable&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;true&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt;
+   &lt;span class=&quot;n&quot;&gt;arguments&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nd&quot;&gt;@Argument&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;x-queue-mode&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;value&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&quot;lazy&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;))&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;listenLazyQueue&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nc&quot;&gt;String&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+   &lt;span class=&quot;n&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;info&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&quot;接收到 lazy.queue 的消息: {}&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;msg&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;h2 id=&quot;消费者的可靠性&quot;&gt;消费者的可靠性&lt;/h2&gt;
+
+&lt;h3 id=&quot;消费者确认机制&quot;&gt;消费者确认机制&lt;/h3&gt;
+
+&lt;p&gt;为了确认消费者是否成功处理消息，RabbitMQ 提供了消费者确认机制（Consumer Acknowledgement），当消费者处理消息结束后应该向 RabbitMQ 发送一个回执，有三种值：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;ack：成功处理消息，MQ 从队列中删除消息&lt;/li&gt;
+  &lt;li&gt;nack：消息处理失败，MQ 需要再次投递消息&lt;/li&gt;
+  &lt;li&gt;reject：消息处理失败并拒绝该消息，MQ 从队列中删除消息&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;什么时候会 reject：消息本身是有问题的，consumer 处理的时候会报错&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;/images/blog/rabbitmq/advance/consumer-ack.png&quot;&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;na&quot;&gt;spring&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;rabbitmq&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;listener&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;simple&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;prefetch&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;
+          &lt;span class=&quot;na&quot;&gt;acknoledge-mode&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;none&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# none, 关闭 ack; manual, 手动 ack; auto: 自动 ack&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;我们把 ack mode 设置成 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;auto&lt;/code&gt; 之后会使可靠性大大增强，只有消费者处理成功之后消息才会被移除，否则消息会被重新投递&lt;/p&gt;
+
+&lt;h3 id=&quot;消费失败处理&quot;&gt;消费失败处理&lt;/h3&gt;
+
+&lt;p&gt;如果我们只是把 ack mode 设置成 auto 就不管了，那么消费者出现异常后，消息会不断 requeue 到队列，再重新发送给消费者，然后再次出现异常，从而无限循环。我们可以使用 Spring 的 retry 机制，在消费者出现异常时利用本地重试，而不是无限制 requeue 到 mq 队列&lt;/p&gt;
+
+&lt;div class=&quot;language-yaml highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;na&quot;&gt;spring&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+  &lt;span class=&quot;na&quot;&gt;rabbitmq&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+    &lt;span class=&quot;na&quot;&gt;listener&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+      &lt;span class=&quot;na&quot;&gt;simple&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+        &lt;span class=&quot;na&quot;&gt;prefetch&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt;
+          &lt;span class=&quot;na&quot;&gt;retry&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;enabled&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;true&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# 开启本地重试&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;initial-interval&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;1000ms&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# 初始的失败等待时长为 1s&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;multiplier&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;1&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# 下次失败的等待时长倍数，下次等待时长 = multiplier * (last-interval)&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;max-attempts&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;m&quot;&gt;3&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# 最大重试次数&lt;/span&gt;
+            &lt;span class=&quot;na&quot;&gt;stateless&lt;/span&gt;&lt;span class=&quot;pi&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;no&quot;&gt;true&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;# true 无状态 false 有状态，如果业务中包含事务使用 false&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;重试多次依旧失败则需要有 &lt;code class=&quot;language-plaintext highlighter-rouge&quot;&gt;MessageRecoverer&lt;/code&gt; 接口来处理&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;RejectAndDontRequeueRecoverer: 重试耗尽后直接 reject，默认就是这种方式&lt;/li&gt;
+  &lt;li&gt;ImmediateRequeueMessageRecoverer: 重试耗尽后返回 nack，消息重新入队&lt;/li&gt;
+  &lt;li&gt;RepublishMessageRecoverer: 重试耗尽后将失败消息投递到指定的交换机&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;h3 id=&quot;业务幂等性&quot;&gt;业务幂等性&lt;/h3&gt;
+
+&lt;p&gt;即业务多次重复处理的结果和只处理一次的结果是相同的&lt;/p&gt;
+
+&lt;h4 id=&quot;方案一唯一消息-id&quot;&gt;方案一：唯一消息 id&lt;/h4&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;给每个消息都设置一个唯一的 id，与消息一起投递给消费者&lt;/li&gt;
+  &lt;li&gt;消费者收到消息后处理自己的业务，业务处理成功后将消息 id 保存到数据库&lt;/li&gt;
+  &lt;li&gt;如果下次又收到相同消息，去数据库查询判断是否存在，存在则为重复消息放弃处理&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;div class=&quot;language-java highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;nd&quot;&gt;@Bean&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;public&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;MessageConverter&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;messageConverter&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// 1. 定义消息转换器&lt;/span&gt;
+    &lt;span class=&quot;nc&quot;&gt;Jackson2JsonMessageConverter&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jjmc&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Jackson2JsonMessageConverter&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;();&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;// 2. 配置自动创建消息 id，用于识别不同消息，也可以在业务中基于 id 判断是否是重复消息&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;jjmc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;setCreateMessageIds&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;jjmc&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
+
+&lt;p&gt;缺点：对原有业务有侵入，并且增加了写数据库步骤，性能会有影响&lt;/p&gt;
+
+&lt;h4 id=&quot;方案二业务判断&quot;&gt;方案二：业务判断&lt;/h4&gt;
+
+&lt;p&gt;结合业务逻辑，基于业务本身做判断&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;/images/blog/rabbitmq/advance/idempotence.png&quot;&gt;&lt;/a&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;延迟消息&quot;&gt;延迟消息&lt;/h2&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;延迟消息：生产者发送消息时指定一个时间，消费者不会立刻收到消息，而是在指定时间之后才收到消息&lt;/li&gt;
+  &lt;li&gt;延迟任务：设置在一定时间之后才执行的任务&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;应用场景：订单支付倒计时&lt;/p&gt;
+
+&lt;h3 id=&quot;死信交换机&quot;&gt;死信交换机&lt;/h3&gt;
+
+&lt;p&gt;当一个队列中的消息满足下面条件之一时就是死信（dead letter）：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;消费者使用 basic.reject 或 basic.nack 声明消费失败，并且消息的 requeue 参数设置为 false&lt;/li&gt;
+  &lt;li&gt;消息时一个过期的消息（达到了队列或消息本身设置的过期时间），超时无人消费&lt;/li&gt;
+  &lt;li&gt;要投递的队列消息堆积满了，最早的消息可能成为死信&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;如果队列通过 dead-letter-exchange 属性指定了一个交换机，那么该队列中的死信就会投递到这个交换机中，这个交换机被称为死信交换机（Dead letter exchange，简称 DLX）&lt;/p&gt;
+
+&lt;h3 id=&quot;延迟消息插件&quot;&gt;延迟消息插件&lt;/h3&gt;
+
+&lt;p&gt;RabbitMQ 的官方也推出了一个插件，原生支持延迟消息的功能。该插件的原理是设计了一种支持延迟消息功能的交换机，当消息投递到交换机后可以暂存一定时间，到期后再投递到队列&lt;/p&gt;
+
+&lt;h3 id=&quot;取消超时订单&quot;&gt;取消超时订单&lt;/h3&gt;
+
+&lt;p&gt;设置 30 min 后检测订单支付状态存在两个问题：&lt;/p&gt;
+
+&lt;ul&gt;
+  &lt;li&gt;如果并发较高，30 min 后可能堆积消息过多&lt;/li&gt;
+  &lt;li&gt;大多数订单很快就会支付，却需要再 MQ 内等待 30 min，浪费资源&lt;/li&gt;
+&lt;/ul&gt;
+
+&lt;p&gt;解决：把一个长的延迟消息分成多个短的延迟消息，比如 10s, 10s, 10s, 15s, 15s, …, 10min，这个延迟序列中前面的时间较短，后面的时间较长，从而保证大部分的消息可以在前面较短的时间内就被处理完&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;/images/blog/rabbitmq/advance/pay-status.png&quot;&gt;&lt;/a&gt;&lt;/p&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Learn" /><summary type="html">课程链接：bilibili P16 - P31</summary></entry><entry><title type="html">RabbitMQ 学习笔记 - 基础篇</title><link href="https://226wyj.github.io/2023/12/19/RabbitMQ-learn-basic/" rel="alternate" type="text/html" title="RabbitMQ 学习笔记 - 基础篇" /><published>2023-12-19T00:00:00-08:00</published><updated>2023-12-19T00:00:00-08:00</updated><id>https://226wyj.github.io/2023/12/19/RabbitMQ-learn-basic</id><content type="html" xml:base="https://226wyj.github.io/2023/12/19/RabbitMQ-learn-basic/">&lt;blockquote&gt;
   &lt;p&gt;课程链接：&lt;a href=&quot;https://www.bilibili.com/video/BV1mN4y1Z7t9/?vd_source=734a4a3d12292363fc3078169ddd7db2&quot;&gt;bilibili&lt;/a&gt;
 P1 - P15&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -1211,109 +1390,4 @@ Output: 23
             &lt;span class=&quot;k&quot;&gt;elif&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;finish_time&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mid&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;piles&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;h&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
                 &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;mid&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;
         &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;i&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Leetcode" /><summary type="html">Problem Link</summary></entry><entry><title type="html">Leetcode 138. Copy List with Random Pointer</title><link href="https://226wyj.github.io/2021/12/28/Leetcode-138/" rel="alternate" type="text/html" title="Leetcode 138. Copy List with Random Pointer" /><published>2021-12-28T00:00:00-08:00</published><updated>2021-12-28T00:00:00-08:00</updated><id>https://226wyj.github.io/2021/12/28/Leetcode-138</id><content type="html" xml:base="https://226wyj.github.io/2021/12/28/Leetcode-138/">&lt;p&gt;&lt;a href=&quot;https://leetcode.com/problems/copy-list-with-random-pointer/&quot;&gt;Problem Link&lt;/a&gt;&lt;/p&gt;
-
-&lt;h2 id=&quot;problem-description&quot;&gt;Problem Description&lt;/h2&gt;
-
-&lt;p&gt;A linked list of length n is given such that each node contains an additional random pointer, which could point to any node in the list, or null.&lt;/p&gt;
-
-&lt;p&gt;Construct a deep copy of the list. The deep copy should consist of exactly n brand new nodes, where each new node has its value set to the value of its corresponding original node. Both the next and random pointer of the new nodes should point to new nodes in the copied list such that the pointers in the original list and copied list represent the same list state. None of the pointers in the new list should point to nodes in the original list.&lt;/p&gt;
-
-&lt;p&gt;For example, if there are two nodes X and Y in the original list, where X.random –&amp;gt; Y, then for the corresponding two nodes x and y in the copied list, x.random –&amp;gt; y.&lt;/p&gt;
-
-&lt;p&gt;Return the head of the copied linked list.&lt;/p&gt;
-
-&lt;p&gt;The linked list is represented in the input/output as a list of n nodes. Each node is represented as a pair of [val, random_index] where:&lt;/p&gt;
-
-&lt;p&gt;val: an integer representing Node.val
-random_index: the index of the node (range from 0 to n-1) that the random pointer points to, or null if it does not point to any node.
-Your code will only be given the head of the original linked list.&lt;/p&gt;
-
-&lt;h2 id=&quot;example&quot;&gt;Example&lt;/h2&gt;
-
-&lt;p&gt;&lt;img src=&quot;/images/leetcode/138.png&quot; alt=&quot;&quot; /&gt;&lt;/p&gt;
-
-&lt;div class=&quot;language-text highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;Input: head = [[7,null],[13,0],[11,4],[10,2],[1,0]]
-Output: [[7,null],[13,0],[11,4],[10,2],[1,0]]
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;h2 id=&quot;solution&quot;&gt;Solution&lt;/h2&gt;
-
-&lt;p&gt;&lt;strong&gt;Solution 1. HashMap&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Use a hash map to store the corresponding copied node with the original node.&lt;/li&gt;
-  &lt;li&gt;Reiterate the original linked list, link the random pointers of the copied nodes.&lt;/li&gt;
-  &lt;li&gt;Return the new head.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Time Complexity: O(n)&lt;/p&gt;
-
-&lt;p&gt;Space Complexity: O(n)&lt;/p&gt;
-
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;s&quot;&gt;&quot;&quot;&quot;
-# Definition for a Node.
-class Node:
-    def __init__(self, x: int, next: &apos;Node&apos; = None, random: &apos;Node&apos; = None):
-        self.val = int(x)
-        self.next = next
-        self.random = random
-&quot;&quot;&quot;&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Solution&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;copyRandomList&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;Node&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;Node&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;# k: original node
-&lt;/span&gt;        &lt;span class=&quot;c1&quot;&gt;# v: copied node
-&lt;/span&gt;        &lt;span class=&quot;n&quot;&gt;hash_map&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;hash_map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;
-
-        &lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;hash_map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hash_map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;hash_map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;random&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hash_map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;get&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;random&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;curr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;
-        
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hash_map&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;
-
-&lt;p&gt;&lt;strong&gt;Solution 2. Inplace opeartion&lt;/strong&gt;&lt;/p&gt;
-
-&lt;ol&gt;
-  &lt;li&gt;Copy each node and link the copied node right behind the corresponding original node. For example, 1 → 2 → 3 would become 1 → 1’ → 2 → 2’ → 3 → 3’.&lt;/li&gt;
-  &lt;li&gt;Link the copied node’s random pointer.&lt;/li&gt;
-  &lt;li&gt;Divide the original nodes and the copied nodes into two linked lists, and the second one is what we want.&lt;/li&gt;
-&lt;/ol&gt;
-
-&lt;p&gt;Time Complexity: O(n)&lt;/p&gt;
-
-&lt;p&gt;Space Complexity: O(1)&lt;/p&gt;
-
-&lt;div class=&quot;language-python highlighter-rouge&quot;&gt;&lt;div class=&quot;highlight&quot;&gt;&lt;pre class=&quot;highlight&quot;&gt;&lt;code&gt;&lt;span class=&quot;k&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nc&quot;&gt;Solution&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;def&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;copyRandomList&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;bp&quot;&gt;self&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;Node&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&apos;Node&apos;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;not&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;# copy 
-&lt;/span&gt;        &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node_copy&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;node_copy&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;Node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;val&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;node_copy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node_copy&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node_copy&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;# link the copied node&apos;s random pointer
-&lt;/span&gt;        &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;random&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-                &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;random&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;random&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;
-        &lt;span class=&quot;c1&quot;&gt;# divide
-&lt;/span&gt;        &lt;span class=&quot;n&quot;&gt;new_head&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;
-        &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;head&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;bp&quot;&gt;None&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt; &lt;span class=&quot;ow&quot;&gt;and&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;next&lt;/span&gt;
-            &lt;span class=&quot;n&quot;&gt;node&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;tmp&lt;/span&gt;
-
-        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;new_head&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;&lt;/div&gt;</content><author><name>Wu, Yuejiang</name></author><category term="Leetcode" /><summary type="html">Problem Link</summary></entry></feed>

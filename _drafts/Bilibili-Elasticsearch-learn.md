@@ -57,3 +57,22 @@ plugins # 插件
 
 启动 Elasticsearch 之后访问 `localhost:9200`，可以得到一串 JSON 信息，代表成启动：
 
+```json
+{
+  "name": "YuejiangdeAir.attlocal.net",
+  "cluster_name": "elasticsearch",
+  "cluster_uuid": "WSJBOQy9TfeMJhNZaQPGuA",
+  "version": {
+    "number": "8.6.2",
+    "build_flavor": "default",
+    "build_type": "tar",
+    "build_hash": "2d58d0f136141f03239816a4e360a8d17b6d8f29",
+    "build_date": "2023-02-13T09:35:20.314882762Z",
+    "build_snapshot": false,
+    "lucene_version": "9.4.2",
+    "minimum_wire_compatibility_version": "7.17.0",
+    "minimum_index_compatibility_version": "7.0.0"
+  },
+  "tagline": "You Know, for Search"
+}
+```

@@ -49,7 +49,7 @@ bin             # 启动文件
 config          # 配置文件
     log4j2      # 日志配置文件
     jvm.options # java 虚拟机相关配置
-    elasticsearch.yml # elasticsearch 的配置文件，默认 9200 端口，跨域
+    elasticsearch.yml # elasticsearch 的配置文件，默认 9200 端口，配置跨域
 lib     # 相关 jar 包
 modules # 功能模块
 plugins # 插件
@@ -76,3 +76,49 @@ plugins # 插件
   "tagline": "You Know, for Search"
 }
 ```
+
+## 核心概念
+
+Elasticsearch（集群）中可以包含多个索引（数据库），每个索引中可以包含多个文档（行），在 ES 7 及之前的版本中还有一个概念叫 type，类似与 MySQL 中的表，不过在 ES 8 中已经废弃。下表是 ES 与 MySQL 的概念类比以供参考：
+
+![](images/../../images/blog/elasticsearch/compare-with-mysql.png)
+
+### 物理设计
+
+Elasticsearch 在后台把每个索引划分成多个分片，每个分片可以在集群中不同服务器间迁移，一个人就是一个集群，默认的集群名称是 `elasticsearch`
+
+### 逻辑设计
+
+#### 文档（document）
+
+ES 是面向文档的，那么意味着索引和搜索数据的最小单位是文档。ES 中，文档有几个重要属性：
+
+- 自我包含，一篇文档同时包含字段和对应的值，也就是同时包含 key 和 value
+- 可以是层次型的，一个文档中包含其他文档（就是一个 JSON 对象）
+- 灵活的结构，文档不依赖预先定义的模式，与关系数据库有很大的不同
+
+#### 索引（index）
+
+就是数据库，ES 中的索引是一个非常大的文档集合。索引存储了映射（mappings）和其它设置，它们被存储到了各个分片上
+
+一个集群至少有一个节点，而一个节点就是一个 ES 进程，节点可以有多个索引。如果你创还能索引，默认情况下索引会有 5 个分片（primary shard，又称主分片）构成的，每一个主分片还会有一个副本（replica shard，又称复制分片）
+
+![](images/../../images/blog/elasticsearch/physical-shard.png)
+
+上图是一个有 3 个节点的集群，可以看到主分片和对应的复制分片都不会再同一个节点内。实际上，一个分片是一个 Lucene 索引，一个包含倒排索引的文件目录。==所以一个 ES 索引是由多个 Lucene 索引组成的。==
+
+#### 倒排索引（reverted index）
+
+这种结构适用于快速的全文搜索。为了创建倒排索引，我们首先要将每个文档拆分成独立的词（或称为词条或者 tokens），然后穿件一个包含所有不重复词条的排序列表，然后列出每个词条出现在哪个文档，相当于我们构建了一个以关键词为 key，以文档编号为 value 的 map。在进行关键词搜索的时候，就可以很快地把对应的文档结果返回而不用遍历每一个文档的内容。
+
+## IK 分词器
+
+IK 分词器是一个常用的开源中文分词器，Github [地址](https://github.com/medcl/elasticsearch-analysis-ik)
+
+安装命令：
+
+```shell
+elasticsearch-plugin install https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v8.6.2/elasticsearch-analysis-ik-8.6.2.zip
+```
+
+需要注意的一点是，安装的插件版本一定要和自己电脑中的 ES 版本一致。也可以手动在 Release 页面中下载，解压缩后放入 ES 目录中的 `plugins` 目录下，但由于某些历史版本已经找不到了，所以建议用 `elaseicsearch-plugin` 命令直接下载

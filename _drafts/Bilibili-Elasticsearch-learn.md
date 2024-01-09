@@ -122,3 +122,9 @@ elasticsearch-plugin install https://github.com/medcl/elasticsearch-analysis-ik/
 ```
 
 需要注意的一点是，安装的插件版本一定要和自己电脑中的 ES 版本一致。也可以手动在 Release 页面中下载，解压缩后放入 ES 目录中的 `plugins` 目录下，但由于某些历史版本已经找不到了，所以建议用 `elaseicsearch-plugin` 命令直接下载
+
+使用 IK 分词器的例子如下，其中 `ik_smart` 为最少切分，`ik_max_word` 为最细粒度切分，穷尽词库的可能
+
+![](images/../../images/blog/elasticsearch/ik-example.png)
+
+有时候可能分词结果不理想，我们可以自己对分词器的词典进行配置

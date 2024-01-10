@@ -128,3 +128,257 @@ elasticsearch-plugin install https://github.com/medcl/elasticsearch-analysis-ik/
 ![](images/../../images/blog/elasticsearch/ik-example.png)
 
 有时候可能分词结果不理想，我们可以自己对分词器的词典进行配置
+
+## 查询
+
+创建索引 / 插入数据
+
+```json
+PUT /kuangshen/_doc/1
+{
+  "name": "狂神说",
+  "age": 23,
+  "desc": "一顿操作猛如虎，一看工资两千五",
+  "tasgs": ["技术宅", "温暖", "直男"]
+}
+```
+
+查询
+
+```json
+GET kuangshen/_search
+{
+  "query": {
+    "match": {
+      "name": "狂神"
+    }
+  },
+}
+```
+
+通过指定 `_source` 来自定义输出的 field
+
+```json
+GET kuangshen/_search
+{
+  "query": {
+    "match": {
+      "name": "狂神"
+    }
+  },
+  "_source": ["name", "desc"]
+}
+```
+
+通过指定 `sort` 来进行排序
+
+```json
+GET kuangshen/_search
+{
+  "query": {
+    "match": {
+      "name": "狂神"
+    }
+  },
+  "sort": [
+    {
+      "age": {
+        "order": "desc"
+      }
+    }
+  ]
+}
+```
+
+分页
+通过指定 from 和 size 两个字段
+
+```json
+GET kuangshen/_search
+{
+  "query": {
+    "match": {
+      "name": "狂神"
+    }
+  },
+  "sort": [
+    {
+      "age": {
+        "order": "desc"
+      }
+    }
+  ],
+  "from": 0,
+  "size": 2
+}
+```
+
+布尔值查询
+
+- `must` 类似于 AND 条件连接，列表中的所有条件都要符合
+- `should` 类似于 OR 条件，列表中的条件满足其一即可
+- `must_not` 类似于 NOT 操作
+
+```json
+GET kuangshen/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "name": "狂神说Java"
+          }
+        },
+        {
+          "match": {
+            "age": 23
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+过滤器 filter
+
+使用 filter 进行数据的过滤，可以添加多个条件。下面的例子中要求返回的结果必须是 `age` 字段的值大于等于 10 但小于等于 30
+
+- gt 大于
+- gte 大于等于
+- lt 小于
+- lte 小于等于
+
+```json
+GET kuangshen/_search
+{
+  "query": {
+    "bool": {
+      "must": [
+        {
+          "match": {
+            "name": "狂神"
+          }
+        }
+      ],
+      "filter": [
+        {
+          "range": {
+            "age": {
+              "gte": 10,
+              "lte": 30
+            }
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+多条件查询
+
+多个条件可以使用空格隔开，只要满足其中一个结果即可以被查出
+
+```json
+GET kuangshen/_search
+{
+  "query": {
+    "match": {
+      "tags": "男 技术"
+    }
+  }
+}
+```
+
+精确查询
+
+term 查询时直接通过倒排索引指定的词条进程精确查找的
+
+关于分词：
+
+- `term`，直接查询精确的
+- `match`，使用分词器解析（先分析文档，然后再通过分析的文档进行查询）
+
+两个类型：text 和 keyword
+
+`keyword` 不会被分词器解析
+
+示例如下：
+
+当我们使用 standard analyzer 的时候，要搜索的字符串会被拆分，然后针对每一个 token 进行搜索
+
+![](images/../../images/blog/elasticsearch/standard-analyzer.png)
+
+但当我们使用 keyword 的时候就不会被拆分，而是将其视为一个整体进行查询
+
+![](images/../../images/blog/elasticsearch/keyword-analyzer.png)
+
+精确查询多个值
+
+```json
+GET testdb/_search
+{
+  "query": {
+    "bool": {
+      "should": [
+        {
+          "term": {
+            "t1": 22
+          }
+        },
+        {
+          "term": {
+            "t1": 33
+          }
+        }
+      ]
+    }
+  }
+}
+```
+
+高亮查询
+
+```json
+GET kuangshen/_search
+{
+  "query": {
+    "match": {
+      "name": "狂神"
+    }
+  },
+  "highlight": {
+    "fields": {
+      "name": {}
+    }
+  }
+}
+```
+
+在选择的高亮字段前后加入了 `<em>` 标签
+
+![](images/../../images/blog/elasticsearch/highlight.png)
+
+我们也可以自定义高亮样式：
+
+```json
+GET kuangshen/_search
+{
+  "query": {
+    "match": {
+      "name": "狂神说"
+    }
+  },
+  "highlight": {
+    "pre_tags": "<p class='key' style='color:red'>",
+    "post_tags": "</p>",
+    "fields": {
+      "name": {}
+    }
+  }
+}
+```
+
+这样一来，查询结果的高亮字段前后就会从 `<em>` 变成我们自定义的 `<p>`

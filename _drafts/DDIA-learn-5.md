@@ -179,6 +179,12 @@ keywords: Architecture, Learn
 * 在读取时执行：
   * 当检测到冲突，所有冲突写入值都会暂时保存下来。下一次读取数据时，会将数据的多个版本读返回给应用层。应用层可能会提示用户或自动解决冲突，井将最后的结果返回到数据库。
 
+#### 自动冲突解决算法
+
+* 无冲突的复制数据类型（CRDT，Conflict-free Replicated Datatypes）
+* 可合并的持久数据结构（Mergeable persistent data）
+* 操作转换（Operational transformaltion）
+
 ### 拓扑结构
 
 复制的拓扑结构描述了写请求从一个节点的传播到其他节点的通信路径。最常见的拓扑结构是全部 - 至 - 全部，如 5-8(c)

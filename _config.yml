@@ -76,8 +76,8 @@ navs:
 #     label: 开源
 
   -
-    href: /wiki/
-    label: Wiki
+    href: /leetcode/
+    label: LeetCode
 
   -
     href: /links/

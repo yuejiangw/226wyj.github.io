@@ -215,8 +215,6 @@ Every document within Elasticsearch is stored within an index. An index groups d
 
 ## Stop words
 
-
-
 * Words that are filtered out during text analysis
     * Common words such as “a”, “the”, “at”, “of”, “on”, etc
 * They provide little to no value for relevance scoring
